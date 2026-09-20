@@ -1,50 +1,89 @@
-# Welcome to your Expo app 👋
+# HireFlow
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+HireFlow is a mobile job-tracking app built with React Native and Expo. The application helps users manage their employment search by guiding them through account creation, profile setup, and career-dashboard tracking.
 
-## Get started
+## Overview
 
-1. Install dependencies
+This project is designed for job seekers who want a simple way to:
+
+- create an account or sign in
+- complete a registration flow for personal and employment details
+- track application progress
+- review quick career dashboard metrics
+- stay organized while searching for jobs
+
+## Current app flow
+
+The application currently includes:
+
+- a login screen with email and password entry
+- a registration screen for account creation
+- onboarding steps for basic information, birth date, and educational background
+- a dashboard with job application statistics and quick actions
+
+## Tech stack
+
+- React Native
+- Expo
+- Expo Router
+- JavaScript
+- Native UI components
+
+## Project structure
+
+```bash
+my-app/
+├── app/
+│   ├── (tabs)/
+│   ├── registration/
+│   ├── index.js
+│   └── register.js
+├── components/
+├── constants/
+├── assets/
+├── scripts/
+├── app.json
+├── package.json
+├── tsconfig.json
+└── README.md
+```
+
+## Getting started
+
+1. Install dependencies:
 
    ```bash
    npm install
    ```
 
-2. Start the app
+2. Start the Expo development server:
 
    ```bash
    npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+3. Open the app in a simulator, emulator, or Expo Go.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Available scripts
 
 ```bash
-npm run reset-project
+npm start
+npm run android
+npm run ios
+npm run web
+npm run lint
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Notes
 
-## Learn more
+This repo is still evolving and currently focuses on the app's onboarding and dashboard flow. The project uses file-based routing through Expo Router and is meant to serve as a foundation for continued employment-app features.
 
-To learn more about developing your project with Expo, look at the following resources:
+## Future improvements
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Planned enhancements may include:
 
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- persistent user data storage
+- real authentication integration
+- job listing and application tracking
+- resume upload and profile management
+- notifications and reminders

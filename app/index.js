@@ -1,11 +1,13 @@
 import { router } from 'expo-router';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View, Image} from 'react-native';
 import { useState } from 'react';
+
 
 import { AuthInput } from '@/components/AuthInput';
 import { PrimaryButton } from '@/components/PrimaryButton';
 
-export default function LoginScreen() {
+
+export default function LoginScreen() {z
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -16,9 +18,14 @@ export default function LoginScreen() {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.card}>
-        <View style={styles.header}>
-          <Text style={styles.brand}>HireFlow</Text>
-          <Text style={styles.subtitle}>Sign up to get started with flowing jobs!</Text>
+        <View style={styles.headest}>         
+          <View>
+            <Image source={require('../assets/images/Hireflow.png')} style={{ width: 75, height: 75, resizeMode: 'contain' }}/>         
+          </View>
+          <View style={styles.header}>
+            <Text style={styles.brand}>HireFlow</Text>
+            <Text style={styles.subtitle}>Sign up to get started with flowing jobs!</Text>
+          </View>
         </View>
 
         <AuthInput
@@ -42,9 +49,9 @@ export default function LoginScreen() {
 
         <View style={styles.registerRow}>
           <Text style={styles.registerText}>Don’t have an account? </Text>
-          <TouchableOpacity onPress={() => router.push('/register')}>
-            <Text style={styles.registerLink}>Register</Text>
-          </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/register')}>
+              <Text style={styles.registerLink}>Register</Text>
+            </TouchableOpacity>
         </View>
       </View>
     </ScrollView>
@@ -55,13 +62,20 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     backgroundColor: '#FBFBFB',
-    justifyContent: 'center',
+    justifyContent: 'start',
     paddingHorizontal: 22,
-    paddingVertical: 36,
+    paddingVertical: 80,
+  },
+  headest: {
+    flexDirection: 'row' , 
+    gap: 20,
+    alignItems: 'flex-start',
+    justifyContent: 'center'
   },
   header: {
-    marginBottom: 3,
+    marginBottom: 80,
     alignItems: 'flex-start',
+    justifyContent: 'center'
   },
   brand: {
     color: 'black',
@@ -69,7 +83,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
-    marginBottom: 10,
+    marginBottom: 0,
   },
   title: {
     color: '#111827',
@@ -79,19 +93,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   subtitle: {
+    width: 200,
     color: '#5f6c7b',
     fontSize: 15,
     lineHeight: 22,
   },
   card: {
     padding: 22,
-    shadowColor: '#c7d6f3',
-    shadowOffset: { width: 0, height: 16 },
-    shadowOpacity: 0.18,
-    shadowRadius: 18,
-    elevation: 6,
-    borderRadius: 20,
-    backgroundColor: '#ffffff',
   },
   registerRow: {
     flexDirection: 'row',
