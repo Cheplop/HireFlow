@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingView} from "react-native";
+import { View, Text, StyleSheet, ScrollView} from "react-native";
 import { AuthInput } from "@/components/AuthInput";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { router } from "expo-router";

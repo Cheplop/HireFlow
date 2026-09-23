@@ -3,31 +3,24 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from "react-native";
 import { router } from "expo-router";
-import { useState } from "react";
 
 import { AuthInput } from "@/components/AuthInput";
 import { PrimaryButton } from "@/components/PrimaryButton";
 
-export default function RegisterScreen() {
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+import { ChevronLeft } from "lucide-react-native";
 
-  const handleRegister = () => {
-    Alert.alert(
-      "Register",
-      `Name: ${fullName || "not provided"}\nEmail: ${email || "not provided"}\nPassword: ${password || "not provided"}`,
-    );
-  };
+
+export default function RegisterScreen() {
+
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.card}>
         <View style={styles.header}>
+          <ChevronLeft size={30} color="black" style={{ marginBottom: 20 }} onPress={() => router.replace("/")} />
           <Text style={styles.title}>Create account</Text>
           <Text style={styles.subtitle}>
               Sign up to manage your applications with a cleaner workflow.
@@ -37,15 +30,11 @@ export default function RegisterScreen() {
         <AuthInput
           label="Username"
           placeholder="Enter your username"
-          value={fullName}
-          onChangeText={setFullName}
         />
         <AuthInput
           label="Password"
           placeholder="Create a password"
           secureTextEntry
-          value={password}
-          onChangeText={setPassword}
         />
 
         <PrimaryButton title="Next" onPress={() => router.replace("/registration/basicInformation")} />

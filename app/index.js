@@ -1,30 +1,27 @@
-import { router } from 'expo-router';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View, Image} from 'react-native';
 import { useState } from 'react';
-
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { router } from 'expo-router';
 
 import { AuthInput } from '@/components/AuthInput';
 import { PrimaryButton } from '@/components/PrimaryButton';
 
-
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
-  const handleLogin = () => {
-    Alert.alert('Login', `Email: ${email || 'not provided'}\nPassword: ${password || 'not provided'}`);
-  };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.card}>
         <View style={styles.headest}>         
           <View>
-            <Image source={require('../assets/images/Hireflow.png')} style={{ width: 75, height: 75, resizeMode: 'contain' }}/>         
+            <Image 
+              source={require('../assets/images/Hireflow.png')} 
+              style={styles.logo}
+            />         
           </View>
           <View style={styles.header}>
             <Text style={styles.brand}>HireFlow</Text>
-            <Text style={styles.subtitle}>Sign up to get started with flowing jobs!</Text>
+            <Text style={styles.subtitle}>Sign in to get started with flowing jobs!</Text>
           </View>
         </View>
 
@@ -45,13 +42,16 @@ export default function LoginScreen() {
           onChangeText={setPassword}
         />
 
-        <PrimaryButton title="Log in" onPress={handleLogin} />
+        <PrimaryButton 
+          title="Log in" 
+          onPress={() => router.replace("/(tabs)")} 
+        />
 
         <View style={styles.registerRow}>
           <Text style={styles.registerText}>Don’t have an account? </Text>
-            <TouchableOpacity onPress={() => router.push('/register')}>
-              <Text style={styles.registerLink}>Register</Text>
-            </TouchableOpacity>
+          <TouchableOpacity onPress={() => router.push('/register')}>
+            <Text style={styles.registerLink}>Register</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </ScrollView>
@@ -62,23 +62,31 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     backgroundColor: '#FBFBFB',
-    justifyContent: 'start',
+    justifyContent: 'flex-start',
     paddingHorizontal: 22,
     paddingVertical: 80,
   },
+  card: {
+    padding: 22,
+  },
   headest: {
-    flexDirection: 'row' , 
+    flexDirection: 'row', 
     gap: 20,
     alignItems: 'flex-start',
-    justifyContent: 'center'
+    justifyContent: 'center',
+  },
+  logo: {
+    width: 75,
+    height: 75,
+    resizeMode: 'contain',
   },
   header: {
-    marginBottom: 80,
+    marginBottom: 40,
     alignItems: 'flex-start',
-    justifyContent: 'center'
+    justifyContent: 'center',
   },
   brand: {
-    color: 'black',
+    color: '#000000',
     fontSize: 30,
     fontWeight: '800',
     letterSpacing: 1.2,
@@ -97,9 +105,6 @@ const styles = StyleSheet.create({
     color: '#5f6c7b',
     fontSize: 15,
     lineHeight: 22,
-  },
-  card: {
-    padding: 22,
   },
   registerRow: {
     flexDirection: 'row',
