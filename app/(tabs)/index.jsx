@@ -16,32 +16,6 @@ const actions = [
 export default function HomeScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.header}>
-        <Text style={styles.greeting}>Good morning</Text>
-        <Text style={styles.title}>Your career dashboard</Text>
-      </View>
-
-      <View style={styles.heroCard}>
-        <Text style={styles.heroEyebrow}>Employment app</Text>
-        <Text style={styles.heroTitle}>Keep momentum moving.</Text>
-        <Text style={styles.heroText}>
-          Track your applications, follow up faster, and stay prepared for the next opportunity.
-        </Text>
-
-        <TouchableOpacity style={styles.primaryButton} activeOpacity={0.85}>
-          <Text style={styles.primaryButtonText}>View pipeline</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.statsRow}>
-        {quickStats.map((item) => (
-          <View key={item.label} style={styles.statCard}>
-            <Text style={styles.statValue}>{item.value}</Text>
-            <Text style={styles.statLabel}>{item.label}</Text>
-          </View>
-        ))}
-      </View>
-
       <View style={styles.sectionCard}>
         <Text style={styles.sectionTitle}>Quick actions</Text>
 
@@ -50,7 +24,6 @@ export default function HomeScreen() {
             <View style={styles.actionIconContainer}>
               <Text style={styles.actionIcon}>{index + 1}</Text>
             </View>
-            <Text style={styles.actionText}>{action}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -61,7 +34,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f4f7fb',
+    backgroundColor: "#f4f7fb",
   },
   content: {
     paddingHorizontal: 20,
@@ -158,20 +131,29 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   sectionCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
     borderRadius: 22,
     padding: 20,
     marginTop: 22,
-    shadowColor: '#dfe7f4',
+    shadowColor: "#dfe7f4",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.18,
     shadowRadius: 16,
     elevation: 3,
   },
+  backButton: {
+    marginBottom: 16,
+    alignSelf: "flex-start",
+  },
+  backButtonText: {
+    color: "#184a9e",
+    fontSize: 14,
+    fontWeight: "700",
+  },
   sectionTitle: {
-    color: '#112033',
+    color: "#112033",
     fontSize: 20,
-    fontWeight: '800',
+    fontWeight: "800",
     marginBottom: 14,
   },
   actionRow: {
@@ -179,7 +161,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#edf2f7',
+    borderBottomColor: "#edf2f7",
   },
   actionIconContainer: {
     width: 32,
@@ -200,5 +182,16 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     flex: 1,
+  },
+  productName: {
+    color: "#1f2d3d",
+    fontSize: 15,
+    fontWeight: "700",
+    marginBottom: 4,
+  },
+  productDescription: {
+    color: "#5f6c7b",
+    fontSize: 12,
+    lineHeight: 18,
   },
 });

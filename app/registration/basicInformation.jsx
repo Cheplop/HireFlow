@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, KeyboardAvoidingView} from "react-native";
+import { View, Text, StyleSheet, ScrollView} from "react-native";
 import { AuthInput } from "@/components/AuthInput";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { router } from "expo-router";
@@ -10,7 +10,7 @@ export default function BasicInformationScreen() {
   return (
             <ScrollView style>
                 <View style={styles.card}>
-                  <ChevronLeft size={30} color="black" style={{ marginBottom: 20 }} onPress={() => router.replace("register") }/>
+                  <ChevronLeft size={30} color="black" style={{ marginBottom: 20 }} onPress={() => router.back() }/>
                         <View style={styles.header}>
                           <Text style={styles.brand}>Basic Information</Text>
                           <View style= {styles.description}>
