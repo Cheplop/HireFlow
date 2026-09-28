@@ -12,7 +12,7 @@ export default function LoginScreen() {z
   const [password, setPassword] = useState('');
 
   const handleLogin = () => {
-    Alert.alert('Login', `Email: ${email || 'not provided'}\nPassword: ${password || 'not provided'}`);
+    router.push('/(tabs)');
   };
 
   return (
