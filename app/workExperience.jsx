@@ -1,50 +1,61 @@
 import { AuthInput } from "@/components/AuthInput";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { router } from "expo-router";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 import { ChevronLeft } from "lucide-react-native";
 
-export default function BasicInformationScreen() {
+export default function WorkExperienceScreen() {
   return (
-    <ScrollView style>
+    <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.card}>
-        <ChevronLeft
-          size={30}
-          color="black"
-          style={{ marginBottom: 20 }}
+        <TouchableOpacity
           onPress={() => router.back()}
-        />
+          style={{ marginBottom: 20, alignSelf: "flex-start" }}
+          activeOpacity={0.7}
+        >
+          <ChevronLeft size={30} color="black" />
+        </TouchableOpacity>
+
         <View style={styles.header}>
-          <Text style={styles.brand}>Basic Information</Text>
+          <Text style={styles.brand}>Work Experience</Text>
           <View style={styles.description}>
             <Text style={styles.subtitle}>
-              Please provide your basic information to get started.
+              Add your most recent role so we can match you with similar jobs.
             </Text>
           </View>
         </View>
 
-        <AuthInput label="Full name" placeholder="Jane Doe" />
-        <AuthInput label="Middle Name" placeholder="Ex: Cruz" />
+        <AuthInput label="Job title" placeholder="Ex: Web Developer" />
+        <AuthInput label="Company" placeholder="Ex: Brightline Labs" />
+        <AuthInput label="Location" placeholder="Ex: Cebu" />
+
         <View style={{ flexDirection: "row", width: "100%", gap: 12 }}>
           <AuthInput
-            style={{ flex: 3 }}
-            label="Last Name"
-            placeholder="Ex: Doe"
+            style={{ flex: 1 }}
+            label="Start date"
+            placeholder="MM/YYYY"
           />
-          <AuthInput style={{ flex: 1 }} label="Suffix" placeholder="Ex: Jr." />
+          <AuthInput
+            style={{ flex: 1 }}
+            label="End date"
+            placeholder="MM/YYYY"
+          />
         </View>
 
         <AuthInput
-          label="Contact Number"
-          placeholder="Enter your phone number"
-          keyboardType="phone-pad"
+          label="Description"
+          placeholder="What did you work on?"
+          multiline
         />
 
-        <PrimaryButton
-          title="NEXT"
-          onPress={() => router.replace("/registration/birthDate")}
-        />
+        <PrimaryButton title="Confirm" onPress={() => router.back()} />
       </View>
     </ScrollView>
   );
@@ -83,21 +94,6 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: "#ffffff",
     padding: 40,
-  },
-  registerRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 18,
-  },
-  registerText: {
-    color: "#667085",
-    fontSize: 14,
-  },
-  registerLink: {
-    color: "#1c5ce6",
-    fontSize: 14,
-    fontWeight: "700",
   },
   description: {
     width: 250,
