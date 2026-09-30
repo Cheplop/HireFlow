@@ -1,6 +1,5 @@
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
-import { ChevronLeft } from 'lucide-react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const quickStats = [
   { label: 'Applications', value: '12' },
@@ -9,25 +8,34 @@ const quickStats = [
 ];
 
 const actions = [
-  'Review jobs',
-  'Update resume',
-  'Track contacts',
-  'Set reminders',
+  { label: 'Work', route: '/jobs' },
+  { label: 'Update resume' },
+  { label: 'Update work experience', route: '/workExperience' },
+  { label: 'Track contacts' },
+  { label: 'Set reminders' },
 ];
 
-export default function Home() {
+export default function HomeScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.sectionCard}>
-
-      <ChevronLeft size={30} color="black" style={{ marginBottom: 20 }} onPress={() => router.back() }/>
         <Text style={styles.sectionTitle}>Quick actions</Text>
 
         {actions.map((action, index) => (
-          <TouchableOpacity key={action} style={styles.actionRow} activeOpacity={0.8}>
+          <TouchableOpacity
+            key={action.label}
+            style={styles.actionRow}
+            activeOpacity={0.8}
+            onPress={() => {
+              if (action.route) {
+                router.push(action.route);
+              }
+            }}
+          >
             <View style={styles.actionIconContainer}>
               <Text style={styles.actionIcon}>{index + 1}</Text>
             </View>
+            <Text style={styles.actionText}>{action.label}</Text>
           </TouchableOpacity>
         ))}
       </View>

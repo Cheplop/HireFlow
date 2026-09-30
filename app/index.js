@@ -1,11 +1,5 @@
 import { useState } from "react";
-import {
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Image, ScrollView, StyleSheet, Text, View, Alert } from "react-native";
 import { router, Link } from "expo-router";
 import { User, KeyRound } from "lucide-react-native";
 
@@ -15,8 +9,20 @@ import { PrimaryButton } from "@/components/PrimaryButton";
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState ("");
+
 
   const handleLogin = () => {
+
+    if (email !==  'remiel' || password !== '1234'){
+        setError("PUK manka dol");
+        return;
+    }
+    if (!email || !password){
+        setError("Wakay gi input dol!");
+        return;
+    }
+
     router.push("/(tabs)");
   };
 
@@ -59,7 +65,7 @@ export default function LoginScreen() {
 
         <PrimaryButton
           title="Log in"
-          onPress={() => router.push("/(tabs)")}
+          onPress={handleLogin}
         />
 
         <View style={styles.registerRow}>

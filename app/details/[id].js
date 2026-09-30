@@ -1,29 +1,20 @@
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 
-const productItems = [
-  { id: 1, name: "Clown", description: "This is the description for job 1." },
-  { id: 2, name: "IT", description: "This is the description for jobt 2." },
-  { id: 3, name: "UX Designer", description: "This is the description for job 3.",},
-  { id: 4, name: "Web Developer", description: "This is the description for job 4.",},
-  { id: 5, name: "Tambay", description: "This is the description for job 5." },
-];
+import { getJobById } from "@/data/jobs";
 
 export default function DetailsScreen() {
   const { id } = useLocalSearchParams();
-  const productId = Number(id);
-  const product = productItems.find((item) => item.id === productId) || {
-    id: productId,
-    name: "Unknown Product",
-    description: "No details available for this item.",
-  };
+  const job = getJobById(id);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Item Details</Text>
-      <Text style={styles.label}>ID: {product.id}</Text>
-      <Text style={styles.label}>Name: {product.name}</Text>
-      <Text style={styles.description}>Description: {product.description}</Text>
+      <Text style={styles.eyebrow}>Job listing</Text>
+      <Text style={styles.title}>{job.name}</Text>
+      <Text style={styles.meta}>
+        {job.company} · {job.location}
+      </Text>
+      <Text style={styles.description}>{job.description}</Text>
 
       <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
         <Text style={styles.backButtonText}>Back</Text>
@@ -39,22 +30,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     backgroundColor: "#f4f7fb",
   },
+  eyebrow: {
+    color: "#184a9e",
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
+    marginBottom: 8,
+  },
   title: {
     fontSize: 28,
     fontWeight: "800",
     color: "#112033",
-    marginBottom: 20,
+    marginBottom: 8,
   },
-  label: {
-    fontSize: 18,
-    color: "#1f2d3d",
-    marginBottom: 10,
+  meta: {
+    fontSize: 16,
+    color: "#184a9e",
+    fontWeight: "600",
+    marginBottom: 16,
   },
   description: {
-    fontSize: 18,
+    fontSize: 16,
     color: "#1f2d3d",
     marginBottom: 30,
-    lineHeight: 26,
+    lineHeight: 24,
   },
   backButton: {
     alignSelf: "flex-start",
