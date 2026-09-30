@@ -13,7 +13,7 @@ export default function BasicInformationScreen() {
           size={30}
           color="black"
           style={{ marginBottom: 20 }}
-          onPress={() => router.replace("registrationbasicInformation")}
+          onPress={() => router.replace("/registration/basicInformation")}
         />
         <View style={styles.header}>
           <Text style={styles.brand}>Birthdate</Text>
@@ -28,7 +28,10 @@ export default function BasicInformationScreen() {
           keyboardType="numeric"
         />
 
-        <PrimaryButton title="NEXT" />
+        <PrimaryButton
+          title="NEXT"
+          onPress={() => router.replace("/workExperience")}
+        />
       </View>
     </ScrollView>
   );
