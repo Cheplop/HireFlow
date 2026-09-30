@@ -35,7 +35,7 @@ export default function BasicInformationScreen() {
 
   const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     backgroundColor: "#FBFBFB",
     justifyContent: "center",
     alignItems: "stretch",

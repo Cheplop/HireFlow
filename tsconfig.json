@@ -13,10 +13,10 @@
     "**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts",
-    "app/index.jsx",
+    "app/login.js",
     "app/register.jsxs",
     "components/PrimaryButton.js",
     "components/AuthInput.js",
-    "app/(tabs)/index.jsx"
+    "app/(tabs)/index.js"
   ]
 }

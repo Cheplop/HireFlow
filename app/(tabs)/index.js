@@ -1,4 +1,6 @@
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { router } from 'expo-router';
+import { ChevronLeft } from 'lucide-react-native';
 
 const quickStats = [
   { label: 'Applications', value: '12' },
@@ -13,10 +15,12 @@ const actions = [
   'Set reminders',
 ];
 
-export default function HomeScreen() {
+export default function Home() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.sectionCard}>
+
+      <ChevronLeft size={30} color="black" style={{ marginBottom: 20 }} onPress={() => router.back() }/>
         <Text style={styles.sectionTitle}>Quick actions</Text>
 
         {actions.map((action, index) => (

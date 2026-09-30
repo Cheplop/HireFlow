@@ -45,7 +45,7 @@ export default function BasicInformationScreen() {
                           keyboardType="phone-pad"
                         />
                 
-                        <PrimaryButton title="NEXT" onPress={() => router.replace("/registration/birthDate")}/>
+                        <PrimaryButton title="NEXT" onPress={() => router.push("/registration/birthDate")}/>
                     </View>
             </ScrollView>
 
@@ -53,10 +53,12 @@ export default function BasicInformationScreen() {
 
   const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     backgroundColor: "#FBFBFB",
-    justifyContent: "center",
+    justifyContent: "start",
     alignItems: "stretch",
+    paddingHorizontal: 22,
+    paddingVertical: 36,
   },
   header: {
     marginBottom: 18,

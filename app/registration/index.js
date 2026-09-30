@@ -1,8 +1,5 @@
-import {Alert, ScrollView, StyleSheet, Text, View} from "react-native";
+import { ScrollView, StyleSheet, Text, View} from "react-native";
 import { router } from "expo-router";
-
-import { ChevronLeft } from "lucide-react-native";
-
 
 import { AuthInput } from "@/components/AuthInput";
 import { PrimaryButton } from "@/components/PrimaryButton";
@@ -11,8 +8,6 @@ import { ChevronLeft } from "lucide-react-native";
 
 
 export default function RegisterScreen() {
-
-
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.card}>
@@ -48,7 +43,7 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     backgroundColor: "#FBFBFB",
-    justifyContent: "center",
+    justifyContent: "start",
     alignItems: "stretch",
     paddingHorizontal: 22,
     paddingVertical: 36,
