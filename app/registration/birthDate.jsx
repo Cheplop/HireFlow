@@ -1,39 +1,43 @@
-import { View, Text, StyleSheet, ScrollView} from "react-native";
 import { AuthInput } from "@/components/AuthInput";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { router } from "expo-router";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { ChevronLeft } from "lucide-react-native";
 
-
 export default function BasicInformationScreen() {
   return (
-            <ScrollView style>
-                <View style={styles.card}>
-                        <ChevronLeft size={30} color="black" style={{ marginBottom: 20 }} onPress={() => router.replace("basicInformation")} />
-                        <View style={styles.header}>
-                          <Text style={styles.brand}>Birthdate</Text>
-                          <View style= {styles.description}>
-                            <Text style={styles.subtitle}>
-                           Tell us when you were born.
-                            </Text>
-                          </View>
-                        </View>
-                
-                        <AuthInput
-                          label="Birthdate"
-                          placeholder="MM/DD/YYYY"
-                          keyboardType="numeric"
-                        />
-                
-                
-                        <PrimaryButton title="NEXT" />
-                    </View>
-            </ScrollView>
+    <ScrollView style>
+      <View style={styles.card}>
+        <ChevronLeft
+          size={30}
+          color="black"
+          style={{ marginBottom: 20 }}
+          onPress={() => router.replace("/registration/basicInformation")}
+        />
+        <View style={styles.header}>
+          <Text style={styles.brand}>Birthdate</Text>
+          <View style={styles.description}>
+            <Text style={styles.subtitle}>Tell us when you were born.</Text>
+          </View>
+        </View>
 
-  )}
+        <AuthInput
+          label="Birthdate"
+          placeholder="MM/DD/YYYY"
+          keyboardType="numeric"
+        />
 
-  const styles = StyleSheet.create({
+        <PrimaryButton
+          title="NEXT"
+          onPress={() => router.replace("/workExperience")}
+        />
+      </View>
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#FBFBFB",
@@ -67,7 +71,7 @@ export default function BasicInformationScreen() {
     backgroundColor: "#ffffff",
     padding: 40,
   },
-  description:{
-    width: 250
-  }
+  description: {
+    width: 250,
+  },
 });
