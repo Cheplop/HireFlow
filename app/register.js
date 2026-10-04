@@ -7,8 +7,6 @@ import { ChevronLeft } from "lucide-react-native";
 import { AuthInput } from "@/components/AuthInput";
 import { PrimaryButton } from "@/components/PrimaryButton";
 
-import { ChevronLeft } from "lucide-react-native";
-
 
 export default function RegisterScreen() {
 
