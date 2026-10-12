@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, ScrollView} from "react-native";
 import { AuthInput } from "@/components/AuthInput";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { router } from "expo-router";
+import  theme  from "../../styles/theme";
 
 import { ChevronLeft } from "lucide-react-native";
 
@@ -36,7 +37,7 @@ export default function BasicInformationScreen() {
   const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    backgroundColor: "#FBFBFB",
+    backgroundColor: theme.colors.background,
     justifyContent: "center",
     alignItems: "stretch",
   },
@@ -52,19 +53,19 @@ export default function BasicInformationScreen() {
     textTransform: "uppercase",
   },
   title: {
-    color: "#111827",
-    fontSize: 30,
+    color: theme.fontColor.primary,
+    fontSize: theme.fontSize.xl,
     fontWeight: "400",
     letterSpacing: -1,
     marginBottom: 8,
   },
   subtitle: {
-    color: "#5f6c7b",
-    fontSize: 15,
-    lineHeight: 22,
+    color: theme.fontColor.secondary,
+    fontSize: theme.fontSize.medium,
+    lineHeight: theme.spacing.large,
   },
   card: {
-    backgroundColor: "#ffffff",
+    backgroundColor: theme.colors.background,
     padding: 40,
   },
   description:{

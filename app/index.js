@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Image, ScrollView, StyleSheet, Text, View, Alert } from "react-native";
 import { router, Link } from "expo-router";
 import { User, KeyRound } from "lucide-react-native";
+import theme from "../styles/theme";
 
 import { AuthInput } from "@/components/AuthInput";
 import { PrimaryButton } from "@/components/PrimaryButton";
@@ -84,7 +85,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    backgroundColor: "#FBFBFB",
+    backgroundColor: theme.colors.background,
     justifyContent: "center",
     paddingHorizontal: 22,
     paddingVertical: 22,
@@ -109,25 +110,25 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   brand: {
-    color: "#000000",
-    fontSize: 30,
+    color: theme.colors.text,
+    fontSize: theme.fontSize.large,
     fontWeight: "800",
     letterSpacing: 1.2,
     textTransform: "uppercase",
     marginBottom: 0,
   },
   title: {
-    color: "#111827",
-    fontSize: 34,
+    color: theme.colors.text,
+    fontSize: theme.fontSize.xl,
     fontWeight: "800",
     letterSpacing: -1,
     marginBottom: 8,
   },
   subtitle: {
     width: 200,
-    color: "#5f6c7b",
-    fontSize: 15,
-    lineHeight: 22,
+    color: theme.fontColor.secondary,
+    fontSize: theme.fontSize.medium,
+    lineHeight: theme.spacing.large,
   },
   registerRow: {
     flexDirection: "row",
@@ -136,12 +137,12 @@ const styles = StyleSheet.create({
     marginTop: 18,
   },
   registerText: {
-    color: "#667085",
-    fontSize: 14,
+    color: theme.fontColor.secondary,
+    fontSize: theme.fontSize.small,
   },
   registerLink: {
-    color: "#1c5ce6",
-    fontSize: 14,
+    color: theme.fontColor.primary,
+    fontSize: theme.fontSize.small,
     fontWeight: "700",
   },
 });

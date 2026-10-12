@@ -1,209 +1,83 @@
-import { router } from 'expo-router';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, View, Text, TextInput} from 'react-native';
+import theme from '../../styles/theme';
+import { ApplyCard } from "@/components/ApplyCard";
+import { AuthInput } from '@/components/AuthInput';
 
-const quickStats = [
-  { label: 'Applications', value: '12' },
-  { label: 'Interviews', value: '3' },
-  { label: 'Offers', value: '1' },
-];
-
-const actions = [
-  { label: 'Work', route: '/jobs' },
-  { label: 'Update resume' },
-  { label: 'Update work experience', route: '/workExperience' },
-  { label: 'Track contacts' },
-  { label: 'Set reminders' },
-];
+import { User } from 'lucide-react-native';
 
 export default function HomeScreen() {
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.sectionCard}>
-        <Text style={styles.sectionTitle}>Quick actions</Text>
+   <ScrollView contentContainerStyle={styles.container}>
 
-        {actions.map((action, index) => (
-          <TouchableOpacity
-            key={action.label}
-            style={styles.actionRow}
-            activeOpacity={0.8}
-            onPress={() => {
-              if (action.route) {
-                router.push(action.route);
-              }
-            }}
-          >
-            <View style={styles.actionIconContainer}>
-              <Text style={styles.actionIcon}>{index + 1}</Text>
-            </View>
-            <Text style={styles.actionText}>{action.label}</Text>
-          </TouchableOpacity>
-        ))}
+    <View style={styles.headerContainer}>
+      <View style = {styles.search}>
+        <AuthInput 
+        placeholder="Search jobs..."
+        icon={<User size={20} />}
+        />
       </View>
+      <View style = {styles.notification}>
+      </View>
+    </View>
+
+      <ApplyCard
+        cardTitle="UX / UI Designer"
+        cardCompany="Google Incorporated"
+        cardLocation="San Francisco, CA"
+        cardDescription="This is yada yada lorem ipsum dolor sit amet in here and there"
+      />
+
+      <ApplyCard
+        cardTitle="Software Engineer"
+        cardCompany="Microsoft Corporation"
+        cardLocation="Seattle, WA"
+        cardDescription="We are looking for a talented software engineer to join our team."
+      />
+
+      <ApplyCard
+        cardTitle="Product Manager"
+        cardCompany="Apple Inc."
+        cardLocation="Cupertino, CA"
+        cardDescription="We are seeking a highly motivated product manager to lead our product development efforts."
+      />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: "#f4f7fb",
-  },
-  content: {
-    paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 32,
-  },
-  header: {
-    marginBottom: 18,
-  },
-  greeting: {
-    color: '#5f6c7b',
-    fontSize: 14,
-    fontWeight: '600',
-    letterSpacing: 0.4,
-    marginBottom: 6,
-  },
-  title: {
-    color: '#112033',
-    fontSize: 30,
-    fontWeight: '800',
-    letterSpacing: -0.8,
-  },
-  heroCard: {
-    backgroundColor: '#112033',
-    borderRadius: 24,
-    padding: 24,
-    shadowColor: '#0d1b2a',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.18,
-    shadowRadius: 20,
-    elevation: 6,
-  },
-  heroEyebrow: {
-    color: '#9ec5ff',
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 1.2,
-    marginBottom: 12,
-    textTransform: 'uppercase',
-  },
-  heroTitle: {
-    color: '#ffffff',
-    fontSize: 28,
-    fontWeight: '800',
-    letterSpacing: -0.7,
-    marginBottom: 10,
-  },
-  heroText: {
-    color: '#dfeafc',
-    fontSize: 15,
-    lineHeight: 22,
-    marginBottom: 22,
-  },
-  primaryButton: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#7cc5ff',
-    borderRadius: 12,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-  },
-  primaryButtonText: {
-    color: '#0d1b2a',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 20,
-    gap: 12,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-    borderRadius: 18,
-    paddingVertical: 18,
-    paddingHorizontal: 14,
-    alignItems: 'center',
-    shadowColor: '#cbd5e1',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    elevation: 2,
-  },
-  statValue: {
-    color: '#112033',
-    fontSize: 24,
-    fontWeight: '800',
-    marginBottom: 4,
-  },
-  statLabel: {
-    color: '#5f6c7b',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  sectionCard: {
-    backgroundColor: "#ffffff",
-    borderRadius: 22,
-    padding: 20,
-    marginTop: 22,
-    shadowColor: "#dfe7f4",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.18,
-    shadowRadius: 16,
-    elevation: 3,
-  },
-  backButton: {
-    marginBottom: 16,
-    alignSelf: "flex-start",
-  },
-  backButtonText: {
-    color: "#184a9e",
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  sectionTitle: {
-    color: "#112033",
-    fontSize: 20,
-    fontWeight: "800",
-    marginBottom: 14,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#edf2f7",
-  },
-  actionIconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    backgroundColor: '#eaf4ff',
+    flexGrow: 1,
+    backgroundColor: theme.colors.background,
+    paddingHorizontal: 22,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    gap: theme.spacing.medium,
   },
-  actionIcon: {
-    color: '#184a9e',
-    fontWeight: '700',
-    fontSize: 12,
+
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: theme.spacing.medium,
   },
-  actionText: {
-    color: '#1f2d3d',
-    fontSize: 15,
-    fontWeight: '600',
+
+  search: {
     flex: 1,
+    borderRadius: theme.radius.large
   },
-  productName: {
-    color: "#1f2d3d",
-    fontSize: 15,
-    fontWeight: "700",
-    marginBottom: 4,
+
+  notification: {
+    width: 45,
+    height: 45,
+    borderRadius: 25,
+    borderWidth: 1
   },
-  productDescription: {
-    color: "#5f6c7b",
-    fontSize: 12,
-    lineHeight: 18,
+
+  iconContainer: {
+    position: "absolute",
+    right: 14, // Aligns perfectly with your paddingHorizontal
+    zIndex: 2, // Keeps it layer-wise above the input field
   },
+
+
+ 
 });
