@@ -1,7 +1,42 @@
-export const productItems = [
-  { id: 1, name: "Clown", description: "This is the description for job 1." },
-  { id: 2, name: "IT", description: "This is the description for job 2." },
-  { id: 3, name: "UX Designer", description: "This is the description for job 3.",},
-  { id: 4, name: "Web Developer", description: "This is the description for job 4.",},
-  { id: 5, name: "Tambay", description: "This is the description for job 5." },
+export const work = [
+  {
+    id: 1,
+    companyLogo:  require("../assets/images/Hireflow.png"),
+    jobTitle: "Front End Developer",
+    jobLocation: "Los Angeles, CA",
+    jobCompany: "Google",
+    jobDescription:
+      "Responsible for making amazing web system layouts that makes clients go woah.",
+    salary: 10000,
+  },
+  {
+    id: 2,
+    companyLogo:  require("../assets/images/icon.png"),
+    jobTitle: "Back End Developer",
+    jobLocation: "Los Cagayan, CA",
+    jobCompany: "Amazon",
+    jobDescription:
+      "Responsible for making amazing web system layouts that makes clients go woah.",
+    salary: 10000,
+  },
+  {
+    id: 3,
+    companyLogo: require("../assets/images/google.png"),
+    jobTitle: "Full End Developer",
+    jobLocation: "Los Butuan, CA",
+    jobCompany: "Nasa",
+    jobDescription:
+      "Responsible for making amazing web system layouts that makes clients go woah.",
+    salary: 10000,
+  },
+  {
+    id: 4,
+    companyLogo: require("../assets/images/google.png"),
+    jobTitle: "Full End Developer",
+    jobLocation: "Los Butuan, CA",
+    jobCompany: "Nasa",
+    jobDescription:
+      "Responsible for making amazing web system layouts that makes clients go woah.",
+    salary: 10000,
+  },
 ];

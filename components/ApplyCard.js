@@ -5,17 +5,19 @@ import { PrimaryButton } from './PrimaryButton';
 import { MapPin } from 'lucide-react-native';
 
 export function ApplyCard({
+  cardLogo,
   cardTitle,
   cardCompany,
   cardLocation,
   cardDescription,
+  onApply
 }) {
   return (
     <View style={styles.card}>
       <View style={styles.wrapper}>
         <View style={styles.imageContainer}>
           <Image
-            source={require('../assets/images/Hireflow.png')}
+            source={cardLogo}
             style={styles.image}
           />
         </View>
@@ -46,6 +48,7 @@ export function ApplyCard({
         <PrimaryButton
           title="Apply"
           style={styles.primaryButton}
+          onPress={onApply}
         />
       </View>
     </View>
