@@ -5,6 +5,8 @@ export const work = [
     jobTitle: "Front End Developer",
     jobLocation: "Los Angeles, CA",
     jobCompany: "Google",
+    jobMode: "Full Time",
+    jobType: "On-site",
     jobDescription:
       "Responsible for making amazing web system layouts that makes clients go woah.",
     salary: 10000,
@@ -15,6 +17,8 @@ export const work = [
     jobTitle: "Back End Developer",
     jobLocation: "Los Cagayan, CA",
     jobCompany: "Amazon",
+    jobMode: "Part Time",
+    jobType: "On-site",
     jobDescription:
       "Responsible for making amazing web system layouts that makes clients go woah.",
     salary: 10000,
@@ -25,6 +29,8 @@ export const work = [
     jobTitle: "Full End Developer",
     jobLocation: "Los Butuan, CA",
     jobCompany: "Nasa",
+    jobMode: "Part Time",
+    jobType: "Remote",
     jobDescription:
       "Responsible for making amazing web system layouts that makes clients go woah.",
     salary: 10000,
@@ -35,6 +41,8 @@ export const work = [
     jobTitle: "Full End Developer",
     jobLocation: "Los Butuan, CA",
     jobCompany: "Nasa",
+    jobMode: "Full-Time",
+    jobType: "Remote",
     jobDescription:
       "Responsible for making amazing web system layouts that makes clients go woah.",
     salary: 10000,
