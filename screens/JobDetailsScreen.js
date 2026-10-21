@@ -30,7 +30,6 @@ export default function DetailsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <View style={styles.back}>
           <ChevronLeft
