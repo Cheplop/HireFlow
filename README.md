@@ -1,6 +1,6 @@
 # HireFlow
 
-HireFlow is a mobile job-tracking app built with React Native and Expo. The application helps users manage their employment search by guiding them through account creation, profile setup, and career-dashboard tracking.
+HireFlow is a mobile employment app built with React Native and Expo. It provides account setup screens and a job-browsing experience with sample listings and job details.
 
 ## Overview
 
@@ -8,9 +8,8 @@ This project is designed for job seekers who want a simple way to:
 
 - create an account or sign in
 - complete a registration flow for personal and employment details
-- track application progress
-- review quick career dashboard metrics
-- stay organized while searching for jobs
+- browse job listings
+- review job descriptions, responsibilities, work arrangements, and salary information
 
 ## Current app flow
 
@@ -19,7 +18,8 @@ The application currently includes:
 - a login screen with email and password entry
 - a registration screen for account creation
 - onboarding steps for basic information, birth date, and educational background
-- a dashboard with job application statistics and quick actions
+- a home screen showing sample job cards
+- a job details screen for each listing
 
 ## Tech stack
 
@@ -27,7 +27,7 @@ The application currently includes:
 - Expo
 - Expo Router
 - JavaScript
-- Native UI components
+- React Native components
 
 ## Project structure
 
@@ -36,10 +36,14 @@ my-app/
 ├── app/
 │   ├── (tabs)/
 │   ├── registration/
+│   ├── jobDetails/
 │   ├── index.js
-│   └── register.js
+│   └── _layout.js
 ├── components/
-├── constants/
+├── data/
+│   └── jobs.js
+├── screens/
+├── styles/
 ├── assets/
 ├── scripts/
 ├── app.json
@@ -64,6 +68,12 @@ my-app/
 
 3. Open the app in a simulator, emulator, or Expo Go.
 
+## Job listings
+
+The app currently uses four sample job listings defined in [`data/jobs.js`](./data/jobs.js). The home screen renders the listings as cards, and selecting a card opens its job details. The data is local and static; it is not loaded from an API or saved to a database.
+
+Each listing has an `id`, company logo, job title, location, company, work mode, work type, description, responsibilities, and salary. Update the `work` array in `data/jobs.js` to change the sample listings. Company logos reference images in `assets/images/`.
+
 ## Available scripts
 
 ```bash
@@ -76,7 +86,7 @@ npm run lint
 
 ## Notes
 
-This repo is still evolving and currently focuses on the app's onboarding and dashboard flow. The project uses file-based routing through Expo Router and is meant to serve as a foundation for continued employment-app features.
+This repo is still evolving. It uses file-based routing through Expo Router and is meant to serve as a foundation for continued employment-app features.
 
 ## Future improvements
 
@@ -84,6 +94,6 @@ Planned enhancements may include:
 
 - persistent user data storage
 - real authentication integration
-- job listing and application tracking
+- connecting job listings and application tracking to a backend
 - resume upload and profile management
 - notifications and reminders
