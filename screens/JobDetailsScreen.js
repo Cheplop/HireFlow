@@ -1,4 +1,3 @@
-
 import { StyleSheet, Text, View, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
@@ -70,8 +69,16 @@ export default function DetailsScreen() {
             Responsibilities
           </Text>
 
-          <Text>- Complete assigned tasks.</Text>
-          <Text>- Work with the team.</Text>
+          {job.responsibilities && job.responsibilities.length > 0 ? (
+            job.responsibilities.map((item, index) => (
+              <View key={index} style={styles.bulletRow}>
+                <Text style={styles.bulletIcon}>•</Text>
+                <Text style={styles.bulletText}>{item}</Text>
+              </View>
+            ))
+          ) : (
+            <Text style={styles.fallbackText}>No responsibilities specified.</Text>
+          )}
 
           <Text style={styles.subHeading}>
             Salary Information
@@ -130,5 +137,28 @@ const styles = StyleSheet.create({
 
   subHeading: {
     fontSize: theme.fontSize.large,
+  },
+
+  bulletRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: theme.spacing.small,
+  },
+
+  bulletIcon: {
+    fontSize: theme.fontSize.large,
+    lineHeight: 24,
+    color: theme.colors.text,
+  },
+
+  bulletText: {
+    flex: 1,
+    fontSize: theme.fontSize.regular,
+    lineHeight: 24,
+    color: theme.colors.text,
+  },
+
+  fallbackText: {
+    color: theme.colors.subtext || "#666",
   },
 });
