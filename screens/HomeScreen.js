@@ -4,6 +4,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ApplyCard } from "@/components/ApplyCard";
 import { AuthInput } from "@/components/AuthInput";
+import { PrimaryButton } from "@/components/PrimaryButton";
+
 
 import { work } from "../data/jobs";
 
@@ -16,38 +18,39 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.safeAreaView}>
       <View style={styles.headerContainer}>
         <View style={styles.search}>
-          <AuthInput placeholder="Search jobs..." icon={<User size={20} />} />
+          <AuthInput placeholder="Search jobs..." />
         </View>
 
         <View style={styles.notification} />
       </View>
 
       <FlatList
-        data={work}
-        contentContainerStyle={styles.cards}
-        renderItem={({ item }) => (
-          <ApplyCard
-            cardLogo={item.companyLogo}
-            cardTitle={item.jobTitle}
-            cardCompany={item.jobCompany}
-            cardLocation={item.jobLocation}
-            cardDescription={item.jobDescription}
-            onApply={() => router.push(`/jobDetails/${item.id}`)}
-          />
-        )}
-        keyExtractor={(item) => String(item.id)}
+          data={work}
+          contentContainerStyle={styles.cards}
+          showsVerticalScrollIndicator={false}
+          renderItem={({ item }) => (
+              <ApplyCard
+                  cardLogo={item.companyLogo}
+                  cardTitle={item.jobTitle}
+                  cardCompany={item.jobCompany}
+                  cardLocation={item.jobLocation}
+                  cardDescription={item.jobDescription}
+                  onApply={() => router.push(`/jobDetails/${item.id}`)}
+              />
+          )}
+          keyExtractor={(item) => String(item.id)}
       />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeAreaView: {
-    flexGrow: 1,
+safeAreaView: {
+    flex: 1,
     backgroundColor: theme.colors.background,
     paddingHorizontal: 22,
     gap: theme.spacing.small,
-  },
+},
 
   headerContainer: {
     flexDirection: "row",
@@ -56,19 +59,39 @@ const styles = StyleSheet.create({
     width: "100%",
   },
 
-  cards: {
+cards: {
     gap: theme.spacing.medium,
-  },
+    paddingBottom: 110,
+},
 
   search: {
     flex: 1,
+    height: 55,
     borderRadius: theme.radius.large,
   },
 
   notification: {
-    width: 45,
-    height: 45,
+    width: 40,
+    height: 40,
     borderRadius: 25,
     borderWidth: 1,
   },
+
+  worktypeContainer: {
+    width: "100%",
+    flexDirection: "row",
+    gap: theme.spacing.medium,
+    justifyContent: "space-between"
+  },
+
+  partTime: {
+    radius: theme.spacing.large,
+    width: 150,
+    height: 55
+  },
+
+  fullTime: {
+    width: 150,
+    height: 55
+  }
 });
