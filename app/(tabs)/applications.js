@@ -1,10 +1,5 @@
-import { View, Text } from 'react-native'
-import React from 'react'
+import ApplicationScreen from "@/screens/ApplicationScreen";
 
-export default function applications() {
-  return (
-    <View>
-      <Text>applications</Text>
-    </View>
-  )
+export default function Applications() {
+  return <ApplicationScreen />;
 }
