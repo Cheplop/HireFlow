@@ -64,7 +64,7 @@ export default function WorkExperienceScreen() {
           <PrimaryButton
             title="NEXT"
             style={styles.nextButton}
-            onPress={() => router.replace("/registration/setupProfile")}
+            onPress={() => router.replace("/")}
           />
         </View>
       </ScrollView>
