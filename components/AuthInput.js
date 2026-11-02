@@ -1,5 +1,6 @@
 import React from "react"; // Changed from import { Children } to standard React import
 import { Text, TextInput, View, StyleSheet } from "react-native";
+import { Search } from "lucide-react-native";
 
 
 export function AuthInput({ label, error, style, children, icon, ...props }) {
