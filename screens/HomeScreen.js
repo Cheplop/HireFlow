@@ -62,6 +62,8 @@ safeAreaView: {
 cards: {
     gap: theme.spacing.medium,
     paddingBottom: 110,
+    paddingHorizontal: 5,
+    paddingTop: 5,
 },
 
   search: {
