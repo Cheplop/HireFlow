@@ -28,9 +28,9 @@ export default function BasicInformationScreen() {
           keyboardType="numeric"
         />
 
-        <PrimaryButton
-          title="NEXT"
-          onPress={() => router.replace("/workExperience")}
+        <PrimaryButton 
+          title="NEXT" 
+          onPress={() => router.push('/registration/educationalBackground')} 
         />
       </View>
     </ScrollView>
