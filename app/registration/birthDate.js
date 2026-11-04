@@ -28,7 +28,8 @@ export default function BasicInformationScreen() {
                         />
                 
                 
-                        <PrimaryButton title="NEXT" />
+                        <PrimaryButton title="NEXT" 
+                             onPress={() => router.push('/registration/educationalBackground')} />
                     </View>
             </ScrollView>
 
