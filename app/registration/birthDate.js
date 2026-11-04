@@ -1,8 +1,8 @@
-import { View, Text, StyleSheet, ScrollView} from "react-native";
 import { AuthInput } from "@/components/AuthInput";
 import { PrimaryButton } from "@/components/PrimaryButton";
 import { router } from "expo-router";
-import  theme  from "../../styles/theme";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
+import theme from "../../styles/theme";
 
 import { ChevronLeft } from "lucide-react-native";
 
@@ -11,7 +11,7 @@ export default function BasicInformationScreen() {
   return (
             <ScrollView style>
                 <View style={styles.card}>
-                        <ChevronLeft size={30} color="black" style={{ marginBottom: 20 }} onPress={() => router.replace("basicInformation")} />
+                        <ChevronLeft size={30} color="black" style={{ marginBottom: 20 }} onPress={() => router.replace("/registration/basicInformation")} />
                         <View style={styles.header}>
                           <Text style={styles.brand}>Birthdate</Text>
                           <View style= {styles.description}>
@@ -28,7 +28,9 @@ export default function BasicInformationScreen() {
                         />
                 
                 
-                        <PrimaryButton title="NEXT" />
+                        <PrimaryButton title="NEXT" 
+                          onPress={() => router.push('/registration/educationalBackground')}
+                           />
                     </View>
             </ScrollView>
 
