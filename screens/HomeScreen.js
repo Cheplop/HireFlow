@@ -25,8 +25,8 @@ export default function HomeScreen() {
                     />
                 </View>
 
-                <View style={styles.notification} >
-                  icon={<Bell size={20} color="black" />}
+                <View style={styles.notification}>
+                  <Bell size={20} color="black" />
                 </View>
             </View>
 
