@@ -1,84 +1,73 @@
 import { View, Text, StyleSheet, Image } from 'react-native';
 import theme from '../styles/theme';
+import StatusCard from './StatusCard';
 
-export default function ApplicationsCard({ cardLogo, cardTitle, cardCompany }) {
+export default function ApplicationsCard({ cardLogo, cardTitle, cardCompany, status }) {
   return (
-    <View>
-      <View style={styles.cards}>
-        <View style={styles.wrapper}>
-          <View style={styles.imageContainer}>
-            <Image
-              source={cardLogo}
-              style={styles.image}
-            />
-          </View>
+    <View style={styles.card}>
+      <View style={styles.imageContainer}>
+        <Image source={cardLogo} style={styles.image} resizeMode="contain" />
+      </View>
 
-          <View style={styles.cardContent}>
-            <Text style={styles.status}>Status: Accepted</Text>
-            <Text style={styles.cardTitle}>{cardTitle}</Text>
-            <Text style={styles.cardCompany}>{cardCompany}</Text>
-          </View>
-        </View>
+      <View style={styles.cardContent}>
+        <Text style={styles.cardTitle} numberOfLines={1}>{cardTitle}</Text>
+        <Text style={styles.cardCompany}>{cardCompany}</Text>
+        <Text style={styles.statusLabel}>Application status</Text>
+      </View>
+
+      <View style={styles.statusContainer}>
+        <StatusCard status={status} />
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-cards: {
-    width: "100%",
-    height: 85,
-    paddingHorizontal: 5,
-    paddingTop: 5,
+  card: {
+    width: '100%',
+    minHeight: 100,
+    padding: theme.spacing.medium,
     borderRadius: theme.radius.large,
-    flexDirection: 'column',
-    alignSelf: 'stretch',
-    boxShadow: theme.boxShadow.default,
-},
-
-  wrapper: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: theme.spacing.medium,
-    padding: 10,
     backgroundColor: theme.colors.cardBackground,
+    boxShadow: theme.boxShadow.default,
   },
-
   imageContainer: {
     backgroundColor: theme.colors.cardBackground,
-    width: 50,
-    height: 50,
-    borderRadius: 15,
+    width: 56,
+    height: 56,
+    borderRadius: theme.radius.small,
     boxShadow: theme.boxShadow.default,
     justifyContent: 'center',
     alignItems: 'center',
   },
-
   image: {
-    width: 35,
-    height: 35,
-    resizeMode: 'contain',
+    width: 38,
+    height: 38,
   },
-
   cardTitle: {
     fontSize: theme.fontSize.medium,
     fontWeight: 'bold',
     color: theme.fontColor.primary,
-    marginBottom: 2,
   },
-
   cardCompany: {
-    fontSize: theme.fontSize.medium,
-    color: theme.fontColor.primary,
-    marginBottom: 10,
+    fontSize: theme.fontSize.small,
+    color: theme.fontColor.secondary,
+    marginTop: 3,
   },
-
   cardContent: {
     flex: 1,
-    alignSelf: 'flex-start',
+    justifyContent: 'center',
   },
-
-  status: {
-    fontSize: theme.fontSize.medium,
-    fontWeight: theme.fontWeight.muted
-  }
+  statusLabel: {
+    color: theme.fontColor.secondary,
+    fontSize: 11,
+    marginTop: 7,
+  },
+  statusContainer: {
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
 });

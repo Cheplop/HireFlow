@@ -44,11 +44,11 @@ export default function JobDetailsCard({
 
 const styles = StyleSheet.create({
   card: {
-    width: 350,
-    height: 225,
+    width: "100%",
     padding: theme.spacing.small,
     gap: theme.spacing.small,
     borderRadius: theme.radius.medium,
+    backgroundColor: theme.colors.cardBackground,
     boxShadow: theme.boxShadow.default,
   },
 

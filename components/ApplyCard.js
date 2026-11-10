@@ -2,13 +2,14 @@
 import { StyleSheet, Text, View, Image } from 'react-native';
 import theme from '../styles/theme';
 import { PrimaryButton } from './PrimaryButton';
-import { MapPin } from 'lucide-react-native';
+import { Briefcase, MapPin } from 'lucide-react-native';
 
 export function ApplyCard({
   cardLogo,
   cardTitle,
   cardCompany,
   cardLocation,
+  cardMode,
   cardDescription,
   onApply
 }) {
@@ -34,6 +35,11 @@ export function ApplyCard({
             <Text style={styles.cardLocation}>
               {cardLocation}
             </Text>
+          </View>
+
+          <View style={styles.cardLocationContainer}>
+            <Briefcase size={14} color={theme.fontColor.secondary} />
+            <Text style={styles.cardLocation}>{cardMode}</Text>
           </View>
 
           <View style={styles.cardDescriptionContainer}>
@@ -73,17 +79,17 @@ const styles = StyleSheet.create({
 
   imageContainer: {
     backgroundColor: theme.colors.cardBackground,
-    width: 100,
-    height: 100,
-    borderRadius: 15,
+    width: 64,
+    height: 64,
+    borderRadius: 12,
     boxShadow: theme.boxShadow.default,
     justifyContent: 'center',
     alignItems: 'center',
   },
 
   image: {
-    width: 50,
-    height: 50,
+    width: 38,
+    height: 38,
     resizeMode: 'contain',
   },
 
@@ -93,23 +99,23 @@ const styles = StyleSheet.create({
   },
 
   cardTitle: {
-    fontSize: theme.fontSize.large,
+    fontSize: theme.fontSize.medium,
     fontWeight: 'bold',
     color: theme.fontColor.primary,
     marginBottom: 2,
   },
 
   cardCompany: {
-    fontSize: theme.fontSize.medium,
+    fontSize: theme.fontSize.small,
     color: theme.fontColor.primary,
-    marginBottom: 10,
+    marginBottom: 5,
   },
 
   cardLocationContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: theme.spacing.small,
-    marginBottom: 10,
+    gap: 5,
+    marginBottom: 4,
   },
 
   cardLocation: {
@@ -119,7 +125,8 @@ const styles = StyleSheet.create({
   },
 
   cardDescription: {
-    fontSize: theme.fontSize.small,
+    fontSize: 11,
+    lineHeight: 15,
     color: theme.fontColor.secondary,
     fontWeight: theme.fontWeight.muted,
   },
@@ -129,14 +136,14 @@ const styles = StyleSheet.create({
   },
 
   buttonContainer: {
-    paddingHorizontal: 10,
-    paddingBottom: 10,
+    paddingHorizontal: 8,
+    paddingBottom: 8,
     alignItems: 'flex-end',
   },
 
   primaryButton: {
     width: 75,
-    height: 30,
-    paddingVertical: 5,
+    height: 28,
+    paddingVertical: 4,
   },
 });

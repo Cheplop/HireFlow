@@ -3,6 +3,10 @@
 const theme = {
   colors: {
     background: "#FBFBFB",
+    cardBackground: "#FFFFFF",
+    text: "#333333",
+    primary: "#7288AE",
+    border: "#E5E7EB",
   },
 
   spacing: {
@@ -21,6 +25,7 @@ const theme = {
     small: 12,
     medium: 15,
     large: 18,
+    regular: 15,
   },
 
   fontColor: {

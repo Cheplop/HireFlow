@@ -1,126 +1,163 @@
-import { useState } from "react";
-import { StyleSheet, View, FlatList } from "react-native";
-import { router } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useMemo, useState } from 'react';
+import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Bell, Search } from 'lucide-react-native';
 
-import { ApplyCard } from "@/components/ApplyCard";
-import { AuthInput } from "@/components/AuthInput";
-import { PrimaryButton } from "@/components/PrimaryButton";
+import { ApplyCard } from '@/components/ApplyCard';
+import { AuthInput } from '@/components/AuthInput';
+import { PrimaryButton } from '@/components/PrimaryButton';
+import { work } from '../data/jobs';
+import theme from '../styles/theme';
 
-import { Search, Bell } from "lucide-react-native";
+const employmentTypes = ['All', 'Full-time', 'Part-time', 'Contractual'];
 
-import { work } from "../data/jobs";
-import theme from "../styles/theme";
+function normalizeType(type) {
+  return type.toLowerCase().replace(/[\s-]/g, '');
+}
 
 export default function HomeScreen() {
-    const [selectedType, setSelectedType] = useState("FULL TIME");
+  const [selectedType, setSelectedType] = useState('All');
+  const [search, setSearch] = useState('');
 
-    return (
-        <SafeAreaView style={styles.safeAreaView}>
-            <View style={styles.headerContainer}>
-                <View style={styles.search}>
-                    <AuthInput
-                        placeholder="Search jobs..."
-                        icon={<Search size={20} color="#abb0b7" />}
-                    />
-                </View>
+  const filteredJobs = useMemo(() => {
+    const query = search.trim().toLowerCase();
 
-                <View style={styles.notification}>
-                  <Bell size={20} color="black" />
-                </View>
-            </View>
+    return work.filter((job) => {
+      const matchesType =
+        selectedType === 'All' ||
+        normalizeType(job.jobMode) === normalizeType(selectedType);
+      const searchableText = [
+        job.jobTitle,
+        job.jobCompany,
+        job.jobLocation,
+        job.jobDescription,
+      ].join(' ').toLowerCase();
 
-            <View style={styles.worktypeContainer}>
-                {["FULL TIME", "PART TIME", "CONTRACTUAL"].map((type) => (
-                    <PrimaryButton
-                        key={type}
-                        title={type}
-                        fontSize={theme.fontSize.small}
-                        variant={selectedType === type ? "active" : "inactive"}
-                        onPress={() => setSelectedType(type)}
-                        style={styles.PrimaryButton}
-                    />
-                ))}
-            </View>
+      return matchesType && (!query || searchableText.includes(query));
+    });
+  }, [search, selectedType]);
 
-            <FlatList
-                data={work}
-                contentContainerStyle={styles.cards}
-                showsVerticalScrollIndicator={false}
-                renderItem={({ item }) => (
-                    <ApplyCard
-                        cardLogo={item.companyLogo}
-                        cardTitle={item.jobTitle}
-                        cardCompany={item.jobCompany}
-                        cardLocation={item.jobLocation}
-                        cardDescription={item.jobDescription}
-                        onApply={() => router.push(`/jobDetails/${item.id}`)}
-                    />
-                )}
-                keyExtractor={(item) => String(item.id)}
+  return (
+    <SafeAreaView style={styles.safeAreaView} edges={['top']}>
+      <View style={styles.headerContainer}>
+        <View style={styles.search}>
+          <AuthInput
+            placeholder="Search jobs..."
+            value={search}
+            onChangeText={setSearch}
+            autoCapitalize="none"
+            icon={<Search size={20} color="#abb0b7" />}
+          />
+        </View>
+        <Pressable
+          accessibilityLabel="View application updates"
+          accessibilityRole="button"
+          onPress={() => router.push('/(tabs)/applications')}
+          style={styles.notification}
+        >
+          <Bell size={20} color={theme.fontColor.primary} />
+        </Pressable>
+      </View>
+
+      <View style={styles.filterWrapper}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.worktypeContainer}
+        >
+          {employmentTypes.map((type) => (
+            <PrimaryButton
+              key={type}
+              title={type}
+              variant={selectedType === type ? 'active' : 'inactive'}
+              onPress={() => setSelectedType(type)}
+              style={styles.filterButton}
             />
-        </SafeAreaView>
-    );
+          ))}
+        </ScrollView>
+      </View>
+
+      <FlatList
+        data={filteredJobs}
+        contentContainerStyle={styles.cards}
+        showsVerticalScrollIndicator={false}
+        renderItem={({ item }) => (
+          <ApplyCard
+            cardLogo={item.companyLogo}
+            cardTitle={item.jobTitle}
+            cardCompany={item.jobCompany}
+            cardLocation={item.jobLocation}
+            cardMode={`${item.jobMode} · ${item.jobType}`}
+            cardDescription={item.jobDescription}
+            onApply={() => router.push(`/jobDetails/${item.id}`)}
+          />
+        )}
+        keyExtractor={(item) => String(item.id)}
+        ListEmptyComponent={
+          <Text style={styles.emptyState}>No jobs match your search. Try another keyword or filter.</Text>
+        }
+      />
+    </SafeAreaView>
+  );
 }
 
 const styles = StyleSheet.create({
-    safeAreaView: {
-        flex: 1,
-        backgroundColor: theme.colors.background,
-        paddingHorizontal: 22,
-    },
-
-    headerContainer: {
-        flexDirection: "row",
-        justifyContent: "center",
-        gap: theme.spacing.small,
-        width: "100%",
-    },
-
-    cards: {
-        gap: theme.spacing.medium,
-        paddingBottom: 110,
-        paddingHorizontal: 5,
-        paddingTop: 5,
-    },
-
-    search: {
-        flex: 1,
-        height: 55,
-        borderRadius: theme.radius.large,
-    },
-
-    notification: {
-        alignItems: "center",
-        justifyContent: "center",
-        width: 40,
-        height: 40,
-        borderRadius: 25,
-        borderWidth: 1,
-    },
-
-    worktypeContainer: {
-        width: "100%",
-        flexDirection: "row",
-        gap: theme.spacing.small,
-        marginBottom: theme.spacing.small,
-
-    },
-
-    partTime: {
-        radius: theme.spacing.large,
-        width: 150,
-        height: 55,
-    },
-
-    fullTime: {
-        width: 150,
-        height: 55,
-    },
-
-    PrimaryButton: {
-        flex: 1,
-        height: 30,
-        paddingVertical: 5,
-      },
+  safeAreaView: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: theme.spacing.small,
+    width: '100%',
+    paddingHorizontal: 22,
+  },
+  search: {
+    flex: 1,
+    height: 55,
+  },
+  notification: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 48,
+    height: 48,
+    padding: 0,
+    marginTop: 1,
+    backgroundColor: theme.colors.cardBackground,
+    borderColor: theme.colors.border,
+    borderWidth: 1,
+    borderRadius: theme.radius.large,
+  },
+  filterWrapper: {
+    marginTop: theme.spacing.small,
+  },
+  worktypeContainer: {
+    gap: theme.spacing.small,
+    paddingHorizontal: 22,
+    paddingBottom: theme.spacing.small,
+  },
+  filterButton: {
+    width: 'auto',
+    minWidth: 78,
+    height: 36,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: theme.radius.large,
+    borderColor: theme.colors.border,
+  },
+  cards: {
+    gap: theme.spacing.medium,
+    paddingBottom: 130, // Extra padding to clear bottom tab bar and floating action button
+    paddingHorizontal: 22,
+    paddingTop: theme.spacing.small,
+    flexGrow: 0, // Prevents the list from stretching/centering items vertically
+  },
+  emptyState: {
+    color: theme.fontColor.secondary,
+    textAlign: 'center',
+    padding: theme.spacing.large,
+    marginTop: theme.spacing.medium,
+  },
 });

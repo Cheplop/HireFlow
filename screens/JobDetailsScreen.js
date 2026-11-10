@@ -5,14 +5,17 @@ import { ChevronLeft } from "lucide-react-native";
 
 import { PrimaryButton } from "../components/PrimaryButton";
 import JobDetailsCard from "../components/JobDetailsCard";
+import StatusCard from "../components/StatusCard";
+import { useApplications } from "../contexts/ApplicationsContext";
 
 import { work } from "../data/jobs";
 import theme from "../styles/theme";
 
 export default function DetailsScreen() {
   const { id } = useLocalSearchParams();
-
   const job = work.find((item) => item.id === Number(id));
+  const { applyForJob, getApplication } = useApplications();
+  const application = job ? getApplication(job.id) : null;
 
   if (!job) {
     return (
@@ -61,7 +64,7 @@ export default function DetailsScreen() {
             Job Description
           </Text>
 
-          <Text>
+          <Text style={styles.bodyText}>
             {job.jobDescription || "No job description available."}
           </Text>
 
@@ -84,14 +87,33 @@ export default function DetailsScreen() {
             Salary Information
           </Text>
 
-          <Text>
+          <Text style={styles.bodyText}>
             {job.salary != null
-              ? `₱${job.salary}`
+              ? `₱${job.salary.toLocaleString()}`
               : "Salary not specified."}
+          </Text>
+
+          <Text style={styles.subHeading}>About {job.jobCompany}</Text>
+          <Text style={styles.bodyText}>
+            {job.companyDescription || `${job.jobCompany} is hiring for this opportunity.`}
           </Text>
         </View>
 
-        <PrimaryButton title="SUBMIT APPLICATION" />
+        {application ? (
+          <View style={styles.applicationState}>
+            <Text style={styles.applicationMessage}>You have applied for this role.</Text>
+            <StatusCard status={application.status} />
+            <PrimaryButton
+              title="VIEW APPLICATIONS"
+              onPress={() => router.push('/(tabs)/applications')}
+            />
+          </View>
+        ) : (
+          <PrimaryButton
+            title="SUBMIT APPLICATION"
+            onPress={() => applyForJob(job.id)}
+          />
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -137,6 +159,25 @@ const styles = StyleSheet.create({
 
   subHeading: {
     fontSize: theme.fontSize.large,
+    fontWeight: "700",
+    color: theme.fontColor.primary,
+  },
+
+  bodyText: {
+    color: theme.fontColor.secondary,
+    fontSize: theme.fontSize.medium,
+    lineHeight: 23,
+  },
+
+  applicationState: {
+    width: "100%",
+    alignItems: "center",
+    gap: theme.spacing.small,
+  },
+
+  applicationMessage: {
+    color: theme.fontColor.secondary,
+    fontSize: theme.fontSize.medium,
   },
 
   bulletRow: {
