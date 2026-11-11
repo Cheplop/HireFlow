@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Image, ScrollView, StyleSheet, Text, View, Alert } from "react-native";
+import { Image, ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
 import { router, Link } from "expo-router";
-import { User, KeyRound } from "lucide-react-native";
+import { User, KeyRound, Eye, EyeOff } from "lucide-react-native";
 import theme from "../styles/theme";
 
 import { AuthInput } from "@/components/AuthInput";
@@ -11,6 +11,7 @@ export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState ("");
+  const [showPassword, setShowPassword] = useState(false);
 
 
   const handleLogin = () => {
@@ -58,10 +59,19 @@ export default function LoginScreen() {
         <AuthInput
           label="Password"
           placeholder="Enter your password"
-          secureTextEntry
+          secureTextEntry={!showPassword}
           value={password}
           onChangeText={setPassword}
           icon={<KeyRound size={20} />}
+          rightIcon={
+            <Pressable onPress={() => setShowPassword(!showPassword)}>
+              {showPassword ? (
+                <EyeOff size={20} color="gray" />
+              ) : (
+                <Eye size={20} color="gray" />
+              )}
+            </Pressable>
+          }
         />
 
         <PrimaryButton

@@ -138,25 +138,7 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <View style={styles.search}>
-          <AuthInput
-            placeholder="Search profile..."
-            value={search}
-            onChangeText={setSearch}
-            autoCapitalize="none"
-            icon={<Search size={18} color="#abb0b7" />}
-          />
-        </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="View application updates"
-          onPress={() => router.push('/(tabs)/applications')}
-          style={styles.notification}
-        >
-          <Bell size={19} color={theme.fontColor.primary} />
-        </Pressable>
-      </View>
+
 
       <ScrollView
         showsVerticalScrollIndicator={false}
