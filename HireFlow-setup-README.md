@@ -16,6 +16,7 @@ This project is designed for job seekers who want a simple way to:
 The application currently includes:
 
 - a login screen with email and password entry
+  - **Note:** login is hardcoded for demo purposes (sample user: username `remiel`, password `1234`) — there is no backend yet, so any other combination will be rejected
 - a registration screen for account creation
 - onboarding steps for basic information, birth date, and educational background
 - a home screen showing sample job cards
