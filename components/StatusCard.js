@@ -1,29 +1,44 @@
 import { View, StyleSheet, Text } from 'react-native';
+import { CalendarClock, ClipboardCheck, X } from 'lucide-react-native';
+
 
 export default function StatusCard({ status }) {
   const statusStyles = {
-    Pending: { backgroundColor: '#FFF2D6', color: '#946200' },
-    Accepted: { backgroundColor: '#E5F4E0', color: '#34733B' },
-    Declined: { backgroundColor: '#FCE8E6', color: '#B3261E' },
-    Completed: { backgroundColor: '#E8EAF6', color: '#4B5694' },
+    Pending: { 
+      backgroundColor: '#FFF2D6', 
+      icon: <CalendarClock size={20} color="#946200" />,
+      boxShadow: '#FFEA88 0px 0px 0px 3px' 
+    },
+    Accepted: { 
+      backgroundColor: '#E5F4E0', 
+      icon: <ClipboardCheck size={20} color="#34733B" />,
+      boxShadow: '#E1E9C9 0px 0px 0px 3px'
+    },
+    Declined: { 
+      backgroundColor: '#FCE8E6', 
+      icon: <X size={20} color="#B3261E" />,
+      boxShadow: '#F1B9B5 0px 0px 0px 3px'
+    },
   };
   const colors = statusStyles[status] || statusStyles.Pending;
 
   return (
-    <View style={[styles.badge, { backgroundColor: colors.backgroundColor }]}>
-      <Text style={[styles.label, { color: colors.color }]}>{status || 'Pending'}</Text>
+    <View style={[styles.badge, { backgroundColor: colors.backgroundColor, boxShadow: colors.boxShadow }]}>
+      {colors.icon}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   badge: {
-    minWidth: 74,
+    minWidth: 40,
+    minHeight: 40,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 20,
     paddingHorizontal: 10,
     paddingVertical: 7,
+    
   },
   label: {
     fontSize: 11,
