@@ -45,10 +45,6 @@ export default function ApplicationScreen() {
         />
       </View>
 
-      <Text style={styles.heading}>My applications</Text>
-      <Text style={styles.subheading}>
-        Track the status of the jobs you have applied for.
-      </Text>
 
       <ScrollView
         horizontal

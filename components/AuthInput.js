@@ -1,25 +1,34 @@
-import React from "react"; // Changed from import { Children } to standard React import
+
+import React from "react";
 import { Text, TextInput, View, StyleSheet } from "react-native";
-import { Search } from "lucide-react-native";
 
-
-export function AuthInput({ label, error, style, children, icon, ...props }) {
+export function AuthInput({label, error, style, children, icon,rightIcon,
+  ...props
+}) {
   return (
     <View style={[styles.container, style]}>
       {label && <Text style={styles.label}>{label}</Text>}
-      
-      <View style={{ position: 'relative', justifyContent: 'center' }}>
+
+      <View style={styles.inputWrapper}>
         {icon && <View style={styles.iconContainer}>{icon}</View>}
 
         <TextInput
           {...props}
           style={[
-            styles.input, 
+            styles.input,
             icon && styles.inputWithIcon,
+            rightIcon && styles.inputWithRightIcon,
             error && styles.inputError
           ]}
           placeholderTextColor="#abb0b7"
         />
+
+        {rightIcon && (
+          <View style={styles.rightIconContainer}>
+            {rightIcon}
+          </View>
+        )}
+
         {children}
       </View>
 
@@ -40,16 +49,20 @@ const styles = StyleSheet.create({
   },
   inputWrapper: {
     position: "relative",
-    justifyContent: "center", // Vertically centers the absolute icon
+    justifyContent: "center",
   },
   iconContainer: {
     position: "absolute",
-    left: 14, // Aligns perfectly with your paddingHorizontal
-    zIndex: 2, // Keeps it layer-wise above the input field
+    left: 14,
+    zIndex: 2,
   },
-
+  rightIconContainer: {
+    position: "absolute",
+    right: 14,
+    zIndex: 2,
+  },
   input: {
-    backgroundColor: "#FFFFFF", // Fixed: Added missing "F" to make it valid hex
+    backgroundColor: "#FFFFFF",
     borderColor: "black",
     borderWidth: 1,
     borderRadius: 14,
@@ -58,9 +71,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: "#112033",
   },
-  // 4. Pushes text to the right so it never overlaps your icon
   inputWithIcon: {
-    paddingLeft: 50, // 14px (left boundary) + ~20px (icon width) + 10px (spacing)
+    paddingLeft: 50,
+  },
+  inputWithRightIcon: {
+    paddingRight: 50,
   },
   inputError: {
     borderColor: "#e86c6c",
