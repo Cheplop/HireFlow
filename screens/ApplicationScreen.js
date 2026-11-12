@@ -10,7 +10,7 @@ import { useApplications } from '../contexts/ApplicationsContext';
 import { work } from '../data/jobs';
 import theme from '../styles/theme';
 
-const statusFilters = ['All', 'Pending', 'Accepted', 'Declined', 'Completed'];
+const statusFilters = ['All', 'Pending', 'Accepted', 'Declined'];
 
 export default function ApplicationScreen() {
   const [search, setSearch] = useState('');
@@ -34,7 +34,7 @@ export default function ApplicationScreen() {
   }, [applications, search, selectedStatus]);
 
   return (
-    <SafeAreaView style={styles.safeAreaView}>
+    <SafeAreaView style={styles.safeAreaView} edges={['top']}>
       <View style={styles.search}>
         <AuthInput
           placeholder="Search applications..."
@@ -45,22 +45,24 @@ export default function ApplicationScreen() {
         />
       </View>
 
-
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filters}
-      >
-        {statusFilters.map((status) => (
-          <PrimaryButton
-            key={status}
-            title={status}
-            variant={selectedStatus === status ? 'active' : 'inactive'}
-            onPress={() => setSelectedStatus(status)}
-            style={styles.filterButton}
-          />
-        ))}
-      </ScrollView>
+      {/* Wrapping the horizontal ScrollView prevents it from expanding vertically */}
+      <View style={styles.filterWrapper}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filters}
+        >
+          {statusFilters.map((status) => (
+            <PrimaryButton
+              key={status}
+              title={status}
+              variant={selectedStatus === status ? 'active' : 'inactive'}
+              onPress={() => setSelectedStatus(status)}
+              style={styles.filterButton}
+            />
+          ))}
+        </ScrollView>
+      </View>
 
       <FlatList
         data={filteredApplications}
@@ -96,26 +98,17 @@ const styles = StyleSheet.create({
   safeAreaView: {
     flex: 1,
     backgroundColor: theme.colors.background,
-    paddingHorizontal: 22,
   },
   search: {
     height: 55,
+    paddingHorizontal: 22,
   },
-  heading: {
-    color: theme.fontColor.primary,
-    fontSize: 22,
-    fontWeight: '700',
+  filterWrapper: {
     marginTop: theme.spacing.small,
-  },
-  subheading: {
-    color: theme.fontColor.secondary,
-    fontSize: theme.fontSize.small,
-    lineHeight: 18,
-    marginTop: 4,
-    marginBottom: theme.spacing.medium,
   },
   filters: {
     gap: theme.spacing.small,
+    paddingHorizontal: 22,
     paddingBottom: theme.spacing.small,
   },
   filterButton: {
@@ -129,10 +122,10 @@ const styles = StyleSheet.create({
   },
   cards: {
     gap: theme.spacing.medium,
-    paddingBottom: 110,
-    paddingHorizontal: 2,
+    paddingBottom: 130,
+    paddingHorizontal: 22,
     paddingTop: theme.spacing.small,
-    flexGrow: 1,
+    flexGrow: 0, // Keeps cards anchored at the top when there are few items
   },
   emptyState: {
     alignItems: 'center',

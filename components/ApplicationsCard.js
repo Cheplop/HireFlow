@@ -10,9 +10,13 @@ export default function ApplicationsCard({ cardLogo, cardTitle, cardCompany, sta
       </View>
 
       <View style={styles.cardContent}>
+        <View style={{ flexDirection: 'row'}}>
+          <Text style={styles.statusLabel}>Application status:  </Text>
+          <Text style={styles.statusLabelText}>{status}</Text>
+        </View>
+
         <Text style={styles.cardTitle} numberOfLines={1}>{cardTitle}</Text>
         <Text style={styles.cardCompany}>{cardCompany}</Text>
-        <Text style={styles.statusLabel}>Application status</Text>
       </View>
 
       <View style={styles.statusContainer}>
@@ -64,7 +68,12 @@ const styles = StyleSheet.create({
   statusLabel: {
     color: theme.fontColor.secondary,
     fontSize: 11,
-    marginTop: 7,
+    marginBottom: 5,
+  },
+  statusLabelText: {
+    color: theme.fontColor.primary,
+    fontSize: 11,
+    fontWeight: theme.fontWeight.bold,
   },
   statusContainer: {
     alignItems: 'flex-end',
