@@ -1,162 +1,132 @@
 
-import { useContext, useEffect, useState } from 'react';
-import { View, Text, FlatList, Image, Pressable, StyleSheet } from 'react-native';
-import { router } from 'expo-router';
+import { useState } from 'react';
+import { View, Text, FlatList, Image, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { PrimaryButton } from '../../../components/PrimaryButton';
 import { AuthInput } from '../../../components/AuthInput';
-import { PostsContext } from '../../../contexts/PostsContext';
+import { useAuth } from '../../../contexts/AuthContext';
+import { useApplications } from '../../../contexts/ApplicationsContext';
+import { useJobs } from '../../../contexts/JobsContext';
 
 const brandColor = '#4B5694';
+const employmentTypes = ['Full-time', 'Part-time', 'Contractual'];
+const workModes = ['On-site', 'Remote', 'Hybrid'];
 
 export default function Posts() {
-    const { posts, fetchPosts, createPost, updatePost, deletePost } = useContext(PostsContext);
+    const { user } = useAuth();
+    const { createJob, updateJob, deleteJob, getJobsForEmployer } = useJobs();
+    const { deleteApplicationsForJob } = useApplications();
+    const employerJobs = getJobsForEmployer(user.id);
 
-    const [postId, setPostId] = useState('');
     const [title, setTitle] = useState('');
+    const [company, setCompany] = useState('');
+    const [location, setLocation] = useState('');
+    const [responsibilities, setResponsibilities] = useState('');
     const [description, setDescription] = useState('');
-    const [price, setPrice] = useState('');
-    const [photoUrl, setPhotoUrl] = useState('');
-    const [editingPost, setEditingPost] = useState(null);
+    const [salary, setSalary] = useState('');
+    const [employmentType, setEmploymentType] = useState(employmentTypes[0]);
+    const [workMode, setWorkMode] = useState(workModes[0]);
+    const [editingJob, setEditingJob] = useState(null);
     const [error, setError] = useState('');
 
-    useEffect(() => {
-        fetchPosts().catch(error => setError(error.message));
-    }, [fetchPosts]);
+    function saveJob() {
+        const numericSalary = Number(salary);
+        const responsibilityList = responsibilities
+            .split('\n')
+            .map((item) => item.trim())
+            .filter(Boolean);
 
+        if (!title.trim() || !company.trim() || !description.trim()) {
+            setError('Enter a job title, company name, and description.');
+            return;
+        }
 
-function savePost() {
-    const numericPostId = Number(postId);
-    const numericPrice = Number(price);
+        if (!salary.trim() || !Number.isFinite(numericSalary) || numericSalary < 0) {
+            setError('Enter a valid salary.');
+            return;
+        }
 
-    if (!editingPost && (!numericPostId || numericPostId < 1 || !Number.isInteger(numericPostId))) {
-        setError('Enter a valid product ID.');
-        return;
+        setError('');
+        const jobData = {
+            jobTitle: title.trim(),
+            jobCompany: company.trim(),
+            jobLocation: location.trim(),
+            jobDescription: description.trim(),
+            responsibilities: responsibilityList,
+            salary: numericSalary,
+            jobMode: employmentType,
+            jobType: workMode,
+            companyLogo: editingJob?.companyLogo || require('../../../assets/images/Hireflow.png'),
+        };
+
+        try {
+            if (editingJob) {
+                updateJob(editingJob.id, user.id, jobData);
+            } else {
+                createJob(user.id, jobData);
+            }
+            cancelEditing();
+        } catch (saveError) {
+            setError(saveError.message);
+        }
     }
 
-    if (!editingPost && posts.some(post => post.id === numericPostId)) {
-        setError('That ID already exists.');
-        return;
-    }
-
-    if (!title.trim() || !description.trim()) {
-        setError('Enter a title and description.');
-        return;
-    }
-
-    if (!price.trim() || isNaN(numericPrice) || numericPrice < 0) {
-        setError('Enter a valid price.');
-        return;
-    }
-
-    if (photoUrl.trim() && !photoUrl.startsWith('http')) {
-        setError('Enter a valid photo URL.');
-        return;
-    }
-
-    setError('');
-
-    const postData = {
-        ...(!editingPost && { id: numericPostId }),
-        title: title.trim(),
-        description: description.trim(),
-        price: numericPrice,
-        thumbnail: photoUrl.trim(),
-    };
-
-    if (editingPost) {
-        updatePost(editingPost.id, postData)
-            .then(cancelEditing)
-            .catch(error => setError(error.message));
-    } else {
-        createPost(postData)
-            .then(cancelEditing)
-            .catch(error => setError(error.message));
-    }
-}
-
-
-    function startEditing(post) {
-        setEditingPost(post);
-        setPostId(String(post.id));
-        setTitle(post.title);
-        setDescription(post.description || '');
-        setPrice(String(post.price ?? ''));
-        setPhotoUrl(post.thumbnail || post.images?.[0] || '');
+    function startEditing(job) {
+        setEditingJob(job);
+        setTitle(job.jobTitle);
+        setCompany(job.jobCompany);
+        setLocation(job.jobLocation || '');
+        setDescription(job.jobDescription || '');
+        setResponsibilities((job.responsibilities || []).join('\n'));
+        setSalary(String(job.salary ?? ''));
+        setEmploymentType(job.jobMode || employmentTypes[0]);
+        setWorkMode(job.jobType || workModes[0]);
         setError('');
     }
 
     function cancelEditing() {
-        setEditingPost(null);
-        setPostId('');
+        setEditingJob(null);
         setTitle('');
+        setCompany('');
+        setLocation('');
         setDescription('');
-        setPrice('');
-        setPhotoUrl('');
+        setResponsibilities('');
+        setSalary('');
+        setEmploymentType(employmentTypes[0]);
+        setWorkMode(workModes[0]);
         setError('');
     }
 
-    function handleDelete(id) {
-        setError('');
-        deletePost(id).catch(error => setError(error.message));
+    function handleDelete(job) {
+        try {
+            deleteApplicationsForJob(job.id, user.id);
+            deleteJob(job.id, user.id);
+            if (editingJob?.id === job.id) cancelEditing();
+            setError('');
+        } catch (deleteError) {
+            setError(deleteError.message);
+        }
     }
 
-    if (posts === null) {
-        return (
-            <SafeAreaView style={styles.container}>
-                <Text style={styles.loading}>
-                    {error || 'Loading products...'}
-                </Text>
-            </SafeAreaView>
-        );
-    }
-
-    function renderPost({ item }) {
-        const imageUrl = item.thumbnail || item.images?.[0];
-
+    function renderJob({ item }) {
         return (
             <View style={styles.postCard}>
                 <View style={styles.postHeader}>
-                    {imageUrl ? (
-                        <Pressable
-                            accessibilityRole="button"
-                            accessibilityLabel={`View ${item.title}`}
-                            onPress={() => router.push(`/posts/${encodeURIComponent(String(item.id))}`)}
-                        >
-                            <Image
-                                source={{ uri: imageUrl }}
-                                style={styles.postImage}
-                            />
-                        </Pressable>
-                    ) : (
-                        <View style={[styles.postImage, styles.noImage]}>
-                            <Text style={styles.mutedText}>No image</Text>
-                        </View>
-                    )}
+                    <Image source={item.companyLogo} style={styles.postImage} />
 
                     <View style={styles.postInfo}>
-                        <Text style={styles.postId}>ID: {item.id}</Text>
-
                         <Text style={styles.postTitle}>
-                            {item.title}
+                            {item.jobTitle}
                         </Text>
-
+                        <Text style={styles.mutedText}>{item.jobCompany}</Text>
                         <Text style={styles.postPrice}>
-                            ${Number(item.price || 0).toFixed(2)}
+                            ₱{Number(item.salary || 0).toLocaleString()}
                         </Text>
                     </View>
                 </View>
 
                 <View style={styles.postActions}>
-                    <View style={styles.actionButton}>
-                        <PrimaryButton
-                            title="View"
-                            variant="secondary"
-                            onPress={() => router.push(`/posts/${item.id}`)}
-                        />
-                    </View>
-
                     <View style={styles.actionButton}>
                         <PrimaryButton
                             title="Edit"
@@ -169,7 +139,7 @@ function savePost() {
                         <PrimaryButton
                             title="Delete"
                             variant="secondary"
-                            onPress={() => handleDelete(item.id)}
+                            onPress={() => handleDelete(item)}
                         />
                     </View>
                 </View>
@@ -180,30 +150,30 @@ function savePost() {
     return (
         <SafeAreaView style={styles.container}>
             <FlatList
-                data={posts}
+                data={employerJobs}
                 keyExtractor={item => String(item.id)}
-                renderItem={renderPost}
+                renderItem={renderJob}
                 contentContainerStyle={styles.listContent}
                 keyboardShouldPersistTaps="handled"
                 ListHeaderComponent={
                     <View>
                         <Text style={styles.screenTitle}>
-                            My Products
+                            My Jobs
                         </Text>
 
                         <Text style={styles.screenSubtitle}>
-                            Create and manage your products.
+                            Publish and manage your job listings.
                         </Text>
 
                         <View style={styles.formCard}>
                             <Text style={styles.formTitle}>
-                                {editingPost ? 'Edit Product' : 'Create Product'}
+                                {editingJob ? 'Edit Job' : 'Create Job'}
                             </Text>
 
                             <Text style={styles.formSubtitle}>
-                                {editingPost
-                                    ? 'Update your product details below.'
-                                    : 'Fill in the details to add a product.'}
+                                {editingJob
+                                    ? 'Update the details for this listing.'
+                                    : 'Add the details for a new job listing.'}
                             </Text>
 
                             {error ? (
@@ -216,54 +186,91 @@ function savePost() {
 
                             <View style={styles.inputGroup}>
                                 <AuthInput
-                                    label="Product ID"
-                                    value={postId}
-                                    onChangeText={setPostId}
-                                    placeholder="Enter a unique numeric ID"
-                                    keyboardType="number-pad"
-                                    editable={!editingPost}
-                                />
-
-                                <AuthInput
-                                    label="Title"
+                                    label="Job title"
                                     value={title}
                                     onChangeText={setTitle}
-                                    placeholder="Enter product title"
+                                    placeholder="Enter a job title"
                                 />
 
                                 <AuthInput
-                                    label="Description"
+                                    label="Company name"
+                                    value={company}
+                                    onChangeText={setCompany}
+                                    placeholder="Enter a company name"
+                                />
+
+                                <AuthInput
+                                    label="Location (optional)"
+                                    value={location}
+                                    onChangeText={setLocation}
+                                    placeholder="City, country or remote"
+                                />
+
+                                <AuthInput
+                                    label="Job description"
                                     value={description}
                                     onChangeText={setDescription}
-                                    placeholder="Enter product description"
+                                    placeholder="Describe the job"
+                                    multiline
+                                    numberOfLines={4}
+                                    textAlignVertical="top"
+                                    style={styles.multilineInput}
                                 />
 
                                 <AuthInput
-                                    label="Price"
-                                    value={price}
-                                    onChangeText={setPrice}
-                                    placeholder="Enter price"
+                                    label="Responsibilities (one per line)"
+                                    value={responsibilities}
+                                    onChangeText={setResponsibilities}
+                                    placeholder="Add each responsibility on a new line"
+                                    multiline
+                                    numberOfLines={4}
+                                    textAlignVertical="top"
+                                    style={styles.multilineInput}
+                                />
+
+                                <AuthInput
+                                    label="Salary"
+                                    value={salary}
+                                    onChangeText={setSalary}
+                                    placeholder="Enter salary"
                                     keyboardType="decimal-pad"
                                 />
 
-                                <AuthInput
-                                    label="Photo URL (optional)"
-                                    value={photoUrl}
-                                    onChangeText={setPhotoUrl}
-                                    placeholder="Paste an image URL"
-                                    keyboardType="url"
-                                    autoCapitalize="none"
-                                />
+                                <Text style={styles.inputLabel}>Employment type</Text>
+                                <View style={styles.optionRow}>
+                                    {employmentTypes.map((type) => (
+                                        <PrimaryButton
+                                            key={type}
+                                            title={type}
+                                            variant={employmentType === type ? 'active' : 'inactive'}
+                                            onPress={() => setEmploymentType(type)}
+                                            style={styles.optionButton}
+                                        />
+                                    ))}
+                                </View>
+
+                                <Text style={styles.inputLabel}>Work mode</Text>
+                                <View style={styles.optionRow}>
+                                    {workModes.map((mode) => (
+                                        <PrimaryButton
+                                            key={mode}
+                                            title={mode}
+                                            variant={workMode === mode ? 'active' : 'inactive'}
+                                            onPress={() => setWorkMode(mode)}
+                                            style={styles.optionButton}
+                                        />
+                                    ))}
+                                </View>
                             </View>
 
                             <View style={styles.formButton}>
                                 <PrimaryButton
-                                    title={editingPost ? 'Save Changes' : 'Create Product'}
-                                    onPress={savePost}
+                                    title={editingJob ? 'Save Changes' : 'Publish Job'}
+                                    onPress={saveJob}
                                 />
                             </View>
 
-                            {editingPost ? (
+                            {editingJob ? (
                                 <PrimaryButton
                                     title="Cancel Editing"
                                     variant="secondary"
@@ -274,18 +281,18 @@ function savePost() {
 
                         <View style={styles.listHeading}>
                             <Text style={styles.sectionTitle}>
-                                Existing Products
+                                Your published jobs
                             </Text>
 
                             <Text style={styles.productCount}>
-                                {posts.length} products
+                                {employerJobs.length} jobs
                             </Text>
                         </View>
                     </View>
                 }
                 ListEmptyComponent={
                     <Text style={styles.emptyText}>
-                        No products yet. Create your first product above.
+                        No jobs yet. Publish your first listing above.
                     </Text>
                 }
                 ItemSeparatorComponent={() => (
@@ -344,6 +351,29 @@ const styles = StyleSheet.create({
     inputGroup: {
         gap: 12,
         marginTop: 5,
+    },
+
+    inputLabel: {
+        color: '#252A40',
+        fontSize: 13,
+        fontWeight: '600',
+        marginBottom: -8,
+    },
+
+    multilineInput: {
+        minHeight: 100,
+    },
+
+    optionRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+
+    optionButton: {
+        width: 'auto',
+        paddingHorizontal: 10,
+        paddingVertical: 8,
     },
 
     formButton: {

@@ -28,7 +28,7 @@ export default function ApplicantCard({ applicant, jobId, status }) {
         <Text style={styles.cardSubtitle} numberOfLines={1}>
           {applicant.experience}
         </Text>
-        <Text style={styles.statusLabel}>Application status</Text>
+        <Text style={styles.statusLabel}>Application status: {status}</Text>
       </View>
 
       <View style={styles.rightSection}>

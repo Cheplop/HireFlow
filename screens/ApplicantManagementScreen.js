@@ -6,31 +6,40 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import ApplicantCard from "@/components/ApplicantCard";
 import { AuthInput } from "@/components/AuthInput";
 import { PrimaryButton } from "@/components/PrimaryButton";
+import { useAuth } from "../contexts/AuthContext";
 import { useApplicants } from "../contexts/ApplicantsContext";
-import { work } from "../data/jobs";
+import { useJobs } from "../contexts/JobsContext";
 import theme from "../styles/theme";
 
-const statusFilters = ["All", "Pending", "Accepted", "Declined"];
+const statusFilters = ["All", "Pending", "Accepted", "Declined", "Completed"];
 
 export default function ApplicantManagementScreen() {
   const [search, setSearch] = useState("");
-  const [selectedJobId, setSelectedJobId] = useState(work[0]?.id ?? null);
+  const [selectedJobId, setSelectedJobId] = useState(null);
   const [selectedStatus, setSelectedStatus] = useState("All");
+  const { user } = useAuth();
+  const { getJobsForEmployer } = useJobs();
+  const employerJobs = getJobsForEmployer(user.id);
   const { getApplicantsByJob } = useApplicants();
+  const activeJobId = employerJobs.some((job) => job.id === selectedJobId)
+    ? selectedJobId
+    : employerJobs[0]?.id;
 
   const filteredApplicants = useMemo(() => {
     const query = search.trim().toLowerCase();
 
-    return getApplicantsByJob(selectedJobId).filter((applicant) => {
-      const status = applicant.applicationStatuses[selectedJobId];
+    if (!activeJobId) return [];
+
+    return getApplicantsByJob(activeJobId, user.id).filter((applicant) => {
+      const status = applicant.status;
       const matchesStatus =
         selectedStatus === "All" || status === selectedStatus;
       const matchesSearch = applicant.name.toLowerCase().includes(query);
       return matchesStatus && matchesSearch;
     });
-  }, [getApplicantsByJob, selectedJobId, selectedStatus, search]);
+  }, [activeJobId, getApplicantsByJob, selectedStatus, search, user.id]);
 
-  const selectedJob = work.find((job) => job.id === selectedJobId);
+  const selectedJob = employerJobs.find((job) => job.id === activeJobId);
 
   return (
     <SafeAreaView style={styles.safeAreaView}>
@@ -54,11 +63,11 @@ export default function ApplicantManagementScreen() {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.jobs}
       >
-        {work.map((job) => (
+        {employerJobs.map((job) => (
           <PrimaryButton
             key={job.id}
             title={job.jobTitle}
-            variant={selectedJobId === job.id ? "active" : "inactive"}
+            variant={activeJobId === job.id ? "active" : "inactive"}
             onPress={() => setSelectedJobId(job.id)}
             style={styles.jobButton}
           />
@@ -82,8 +91,9 @@ export default function ApplicantManagementScreen() {
       </ScrollView>
 
       <Text style={styles.sectionLabel}>
-        {filteredApplicants.length} applicant
-        {filteredApplicants.length === 1 ? "" : "s"} — {selectedJob?.jobTitle}
+        {selectedJob
+          ? `${filteredApplicants.length} applicant${filteredApplicants.length === 1 ? "" : "s"} — ${selectedJob.jobTitle}`
+          : "No jobs yet"}
       </Text>
 
       <FlatList
@@ -93,17 +103,21 @@ export default function ApplicantManagementScreen() {
         renderItem={({ item }) => (
           <ApplicantCard
             applicant={item}
-            jobId={selectedJobId}
-            status={item.applicationStatuses[selectedJobId]}
+            jobId={activeJobId}
+            status={item.status}
           />
         )}
         keyExtractor={(item) => String(item.id)}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Users size={40} color={theme.fontColor.secondary} />
-            <Text style={styles.emptyTitle}>No applicants found</Text>
+            <Text style={styles.emptyTitle}>
+              {selectedJob ? "No applicants found" : "Publish a job to get started"}
+            </Text>
             <Text style={styles.emptyText}>
-              Try a different job, status filter, or search term.
+              {selectedJob
+                ? "Try a different status filter or search term."
+                : "Applicants will appear here when they apply to your listings."}
             </Text>
           </View>
         }

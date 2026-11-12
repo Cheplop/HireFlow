@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
     BookOpen,
@@ -11,26 +12,45 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { PrimaryButton } from "@/components/PrimaryButton";
 import StatusCard from "@/components/StatusCard";
-import { useApplicants } from "../../contexts/ApplicantsContext";
-import { getApplicantById } from "../../data/applicants";
-import { work } from "../../data/jobs";
+import { useAuth } from "../../contexts/AuthContext";
+import { useApplications } from "../../contexts/ApplicationsContext";
+import { useJobs } from "../../contexts/JobsContext";
 import theme from "../../styles/theme";
 
 export default function ApplicantDetails() {
   const { id, jobId } = useLocalSearchParams();
   const router = useRouter();
-  const { getStatus, updateApplicationStatus } = useApplicants();
+  const { user } = useAuth();
+  const { getApplicationById, setApplicationStatus } = useApplications();
+  const { getJobById } = useJobs();
+  const application = getApplicationById(id);
+  const applicant = application?.applicant;
+  const job = application && getJobById(application.jobId);
+  const requestedJobId = Array.isArray(jobId) ? jobId[0] : jobId;
+  const status = application?.status;
+  const [error, setError] = useState("");
 
-  const applicant = getApplicantById(id);
-  const job = work.find((item) => item.id === Number(jobId));
-  const status = getStatus(Number(id), Number(jobId));
-
-  if (!applicant) {
+  if (
+    user?.role !== "employer" ||
+    !applicant ||
+    !job ||
+    job.employerId !== user.id ||
+    (requestedJobId && Number(requestedJobId) !== job.id)
+  ) {
     return (
       <SafeAreaView style={styles.safeAreaView}>
         <Text style={styles.heading}>Applicant not found</Text>
       </SafeAreaView>
     );
+  }
+
+  function updateStatus(nextStatus) {
+    try {
+      setApplicationStatus(application.id, user.id, nextStatus);
+      setError("");
+    } catch (updateError) {
+      setError(updateError.message);
+    }
   }
 
   return (
@@ -61,6 +81,7 @@ export default function ApplicantDetails() {
           <Text style={styles.about}>{applicant.about}</Text>
           <View style={styles.statusRow}>
             <Text style={styles.statusLabel}>Status for {job?.jobTitle}</Text>
+            <Text style={styles.statusValue}>{status}</Text>
             <StatusCard status={status} />
           </View>
         </View>
@@ -99,23 +120,17 @@ export default function ApplicantDetails() {
         </View>
 
         <View style={styles.actions}>
-          <PrimaryButton
-            title="Accept"
-            variant="active"
-            onPress={() =>
-              updateApplicationStatus(Number(id), Number(jobId), "Accepted")
-            }
-            style={styles.actionButton}
-          />
-          <PrimaryButton
-            title="Decline"
-            variant="inactive"
-            onPress={() =>
-              updateApplicationStatus(Number(id), Number(jobId), "Declined")
-            }
-            style={styles.actionButton}
-          />
+          {["Pending", "Accepted", "Declined", "Completed"].map((nextStatus) => (
+            <PrimaryButton
+              key={nextStatus}
+              title={nextStatus}
+              variant={status === nextStatus ? "active" : "inactive"}
+              onPress={() => updateStatus(nextStatus)}
+              style={styles.actionButton}
+            />
+          ))}
         </View>
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -184,6 +199,11 @@ const styles = StyleSheet.create({
     fontSize: theme.fontSize.small,
     color: theme.fontColor.secondary,
   },
+  statusValue: {
+    fontSize: theme.fontSize.small,
+    fontWeight: "700",
+    color: theme.fontColor.primary,
+  },
   detailCard: {
     padding: theme.spacing.medium,
     borderRadius: theme.radius.large,
@@ -231,9 +251,15 @@ const styles = StyleSheet.create({
   },
   actions: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: theme.spacing.medium,
   },
   actionButton: {
-    flex: 1,
+    flexGrow: 1,
+    flexBasis: "40%",
+  },
+  errorText: {
+    color: "#B3261E",
+    fontSize: theme.fontSize.small,
   },
 });

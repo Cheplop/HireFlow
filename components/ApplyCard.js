@@ -11,7 +11,8 @@ export function ApplyCard({
   cardLocation,
   cardMode,
   cardDescription,
-  onApply
+  onApply,
+  actionTitle = 'Apply',
 }) {
   return (
     <View style={styles.card}>
@@ -52,7 +53,7 @@ export function ApplyCard({
 
       <View style={styles.buttonContainer}>
         <PrimaryButton
-          title="Apply"
+          title={actionTitle}
           style={styles.primaryButton}
           onPress={onApply}
         />

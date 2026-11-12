@@ -6,8 +6,10 @@ import theme from "../styles/theme";
 
 import { AuthInput } from "@/components/AuthInput";
 import { PrimaryButton } from "@/components/PrimaryButton";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function LoginScreen() {
+  const { setUser } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState ("");
@@ -15,16 +17,24 @@ export default function LoginScreen() {
 
 
   const handleLogin = () => {
+    const accounts = {
+      remiel: { id: "remiel", username: "remiel", role: "employee" },
+      bill: { id: "bill", username: "Bill", role: "employer" },
+    };
+    const account = accounts[email.toLowerCase()];
 
-    if (email !==  'remiel' || password !== '1234'){
-        setError("PUK manka dol");
-        return;
-    }
-    if (!email || !password){
-        setError("Wakay gi input dol!");
-        return;
+    if (!email || !password) {
+      setError("Wakay gi input dol!");
+      return;
     }
 
+    if (!account || password !== "1234") {
+      setError("PUK manka dol");
+      return;
+    }
+
+    setError("");
+    setUser(account);
     router.push("/(tabs)");
   };
 
@@ -78,6 +88,8 @@ export default function LoginScreen() {
           title="Log in"
           onPress={handleLogin}
         />
+
+        {error ? <Text style={styles.error}>{error}</Text> : null}
 
         <View style={styles.registerRow}>
           <Text style={styles.registerText}>Don’t have an account? </Text>
@@ -154,5 +166,11 @@ const styles = StyleSheet.create({
     color: theme.fontColor.primary,
     fontSize: theme.fontSize.small,
     fontWeight: "700",
+  },
+  error: {
+    color: "#B3261E",
+    fontSize: theme.fontSize.small,
+    textAlign: "center",
+    marginTop: 10,
   },
 });

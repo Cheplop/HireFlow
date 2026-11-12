@@ -7,7 +7,8 @@ import { Bell, Search } from 'lucide-react-native';
 import { ApplyCard } from '@/components/ApplyCard';
 import { AuthInput } from '@/components/AuthInput';
 import { PrimaryButton } from '@/components/PrimaryButton';
-import { work } from '../data/jobs';
+import { useAuth } from '../contexts/AuthContext';
+import { useJobs } from '../contexts/JobsContext';
 import theme from '../styles/theme';
 
 const employmentTypes = ['All', 'Full-time', 'Part-time', 'Contractual'];
@@ -17,13 +18,19 @@ function normalizeType(type) {
 }
 
 export default function HomeScreen() {
+  const { user } = useAuth();
+  const { jobs, getJobsForEmployer } = useJobs();
+  const isEmployer = user?.role === 'employer';
+  const visibleJobs = isEmployer
+    ? getJobsForEmployer(user.id)
+    : jobs.filter((job) => job.isPublished);
   const [selectedType, setSelectedType] = useState('All');
   const [search, setSearch] = useState('');
 
   const filteredJobs = useMemo(() => {
     const query = search.trim().toLowerCase();
 
-    return work.filter((job) => {
+    return visibleJobs.filter((job) => {
       const matchesType =
         selectedType === 'All' ||
         normalizeType(job.jobMode) === normalizeType(selectedType);
@@ -36,7 +43,7 @@ export default function HomeScreen() {
 
       return matchesType && (!query || searchableText.includes(query));
     });
-  }, [search, selectedType]);
+  }, [search, selectedType, visibleJobs]);
 
   return (
     <SafeAreaView style={styles.safeAreaView} edges={['top']}>
@@ -51,9 +58,11 @@ export default function HomeScreen() {
           />
         </View>
         <Pressable
-          accessibilityLabel="View application updates"
+          accessibilityLabel={isEmployer ? 'View applicants' : 'View application updates'}
           accessibilityRole="button"
-          onPress={() => router.push('/(tabs)/applications')}
+          onPress={() =>
+            router.push(isEmployer ? '/(tabs)/applicants' : '/(tabs)/applications')
+          }
           style={styles.notification}
         >
           <Bell size={20} color={theme.fontColor.primary} />
@@ -90,6 +99,7 @@ export default function HomeScreen() {
             cardLocation={item.jobLocation}
             cardMode={`${item.jobMode} · ${item.jobType}`}
             cardDescription={item.jobDescription}
+            actionTitle={isEmployer ? 'View' : 'Apply'}
             onApply={() => router.push(`/jobDetails/${item.id}`)}
           />
         )}

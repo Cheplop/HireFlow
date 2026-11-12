@@ -6,24 +6,32 @@ import { Search } from 'lucide-react-native';
 import { AuthInput } from '@/components/AuthInput';
 import ApplicationsCard from '@/components/ApplicationsCard';
 import { PrimaryButton } from '@/components/PrimaryButton';
+import { useAuth } from '../contexts/AuthContext';
 import { useApplications } from '../contexts/ApplicationsContext';
-import { work } from '../data/jobs';
+import { useJobs } from '../contexts/JobsContext';
 import theme from '../styles/theme';
 
-const statusFilters = ['All', 'Pending', 'Accepted', 'Declined'];
+const statusFilters = ['All', 'Pending', 'Accepted', 'Declined', 'Completed'];
 
 export default function ApplicationScreen() {
   const [search, setSearch] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('All');
-  const { applications } = useApplications();
+  const { user } = useAuth();
+  const { jobs } = useJobs();
+  const {
+    getApplicationsForEmployee,
+    updateEmployeeApplication,
+    withdrawApplication,
+  } = useApplications();
+  const employeeApplications = getApplicationsForEmployee(user.id);
 
   const filteredApplications = useMemo(() => {
     const query = search.trim().toLowerCase();
 
-    return applications
+    return employeeApplications
       .map((application) => ({
         ...application,
-        job: work.find((job) => job.id === application.jobId),
+        job: jobs.find((job) => job.id === application.jobId),
       }))
       .filter(({ job, status }) => {
         if (!job) return false;
@@ -31,7 +39,7 @@ export default function ApplicationScreen() {
         const matchesSearch = `${job.jobTitle} ${job.jobCompany}`.toLowerCase().includes(query);
         return matchesStatus && matchesSearch;
       });
-  }, [applications, search, selectedStatus]);
+  }, [employeeApplications, jobs, search, selectedStatus]);
 
   return (
     <SafeAreaView style={styles.safeAreaView} edges={['top']}>
@@ -70,20 +78,24 @@ export default function ApplicationScreen() {
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
           <ApplicationsCard
-            cardLogo={item.job.companyLogo}
-            cardTitle={item.job.jobTitle}
-            cardCompany={item.job.jobCompany}
-            status={item.status}
+            application={item}
+            job={item.job}
+            onUpdate={(applicationId, coverLetter) =>
+              updateEmployeeApplication(applicationId, user.id, { coverLetter })
+            }
+            onWithdraw={(applicationId) =>
+              withdrawApplication(applicationId, user.id)
+            }
           />
         )}
-        keyExtractor={(item) => String(item.jobId)}
+        keyExtractor={(item) => String(item.id)}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={styles.emptyTitle}>
-              {applications.length === 0 ? 'No applications yet' : 'No matching applications'}
+              {employeeApplications.length === 0 ? 'No applications yet' : 'No matching applications'}
             </Text>
             <Text style={styles.emptyText}>
-              {applications.length === 0
+              {employeeApplications.length === 0
                 ? 'Explore available jobs and submit an application to see it here.'
                 : 'Try a different search or status filter.'}
             </Text>

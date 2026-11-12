@@ -1,10 +1,10 @@
 
 import { Stack } from 'expo-router';
-import { PostsProvider } from '../../../contexts/PostsContext';
+import EmployerOnly from '../../../components/EmployerOnly';
 
 export default function TabLayout() {
   return (
-    <PostsProvider>
+    <EmployerOnly>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen
           name="index"
@@ -16,11 +16,10 @@ export default function TabLayout() {
         <Stack.Screen
           name="[id]"
           options={{
-            title: 'post',
+            title: 'job',
           }}
         />
-        
       </Stack>
-    </PostsProvider>
+    </EmployerOnly>
   );
 }

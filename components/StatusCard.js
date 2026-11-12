@@ -1,4 +1,4 @@
-import { View, StyleSheet, Text } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { CalendarClock, ClipboardCheck, X } from 'lucide-react-native';
 
 
@@ -18,6 +18,11 @@ export default function StatusCard({ status }) {
       backgroundColor: '#FCE8E6', 
       icon: <X size={20} color="#B3261E" />,
       boxShadow: '#F1B9B5 0px 0px 0px 3px'
+    },
+    Completed: {
+      backgroundColor: '#E4EEFF',
+      icon: <ClipboardCheck size={20} color="#315A9B" />,
+      boxShadow: '#D5E2F8 0px 0px 0px 3px'
     },
   };
   const colors = statusStyles[status] || statusStyles.Pending;

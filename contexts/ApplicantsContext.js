@@ -1,45 +1,55 @@
-import { createContext, useCallback, useContext, useState } from "react";
-import { applicants as seedApplicants } from "../data/applicants";
+import { createContext, useCallback, useContext } from "react";
+import { useApplications } from "./ApplicationsContext";
+import { useJobs } from "./JobsContext";
 
 const ApplicantsContext = createContext(null);
 
 export function ApplicantsProvider({ children }) {
-  const [applicants, setApplicants] = useState(seedApplicants);
+  const {
+    getApplicationsForJob,
+    getApplicationById,
+    setApplicationStatus,
+  } = useApplications();
+  const { getJobById } = useJobs();
 
   const getApplicantsByJob = useCallback(
-    (jobId) =>
-      applicants.filter((a) => a.appliedJobIds.includes(Number(jobId))),
-    [applicants],
+    (jobId, employerId) => {
+      const job = getJobById(jobId);
+      if (!job || job.employerId !== employerId) return [];
+
+      return getApplicationsForJob(job.id).map((application) => ({
+        ...application.applicant,
+        id: application.id,
+        status: application.status,
+      }));
+    },
+    [getApplicationsForJob, getJobById],
   );
 
   const getStatus = useCallback(
-    (applicantId, jobId) =>
-      applicants.find((a) => a.id === applicantId)?.applicationStatuses[
-        jobId
-      ] || "Pending",
-    [applicants],
+    (applicationId, jobId) => {
+      const application = getApplicationById(applicationId);
+      return application?.jobId === Number(jobId)
+        ? application.status
+        : "Pending";
+    },
+    [getApplicationById],
   );
 
-  const updateApplicationStatus = useCallback((applicantId, jobId, status) => {
-    setApplicants((current) =>
-      current.map((applicant) =>
-        applicant.id === applicantId
-          ? {
-              ...applicant,
-              applicationStatuses: {
-                ...applicant.applicationStatuses,
-                [jobId]: status,
-              },
-            }
-          : applicant,
-      ),
-    );
-  }, []);
+  const updateApplicationStatus = useCallback(
+    (applicationId, jobId, status, employerId) => {
+      const application = getApplicationById(applicationId);
+      if (!application || application.jobId !== Number(jobId)) {
+        throw new Error("Application not found for this job.");
+      }
+      setApplicationStatus(applicationId, employerId, status);
+    },
+    [getApplicationById, setApplicationStatus],
+  );
 
   return (
     <ApplicantsContext.Provider
       value={{
-        applicants,
         getApplicantsByJob,
         getStatus,
         updateApplicationStatus,

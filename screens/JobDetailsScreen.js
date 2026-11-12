@@ -1,23 +1,36 @@
 import { StyleSheet, Text, View, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { router, useLocalSearchParams } from "expo-router";
+import { Redirect, router, useLocalSearchParams } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
+import { useState } from "react";
 
 import { PrimaryButton } from "../components/PrimaryButton";
 import JobDetailsCard from "../components/JobDetailsCard";
 import StatusCard from "../components/StatusCard";
+import { useAuth } from "../contexts/AuthContext";
 import { useApplications } from "../contexts/ApplicationsContext";
-
-import { work } from "../data/jobs";
+import { useJobs } from "../contexts/JobsContext";
 import theme from "../styles/theme";
 
 export default function DetailsScreen() {
   const { id } = useLocalSearchParams();
-  const job = work.find((item) => item.id === Number(id));
+  const { user } = useAuth();
+  const { getJobById } = useJobs();
   const { applyForJob, getApplication } = useApplications();
-  const application = job ? getApplication(job.id) : null;
+  const [error, setError] = useState("");
+  const job = getJobById(id);
+  const employerCannotView =
+    user?.role === "employer" && job?.employerId !== user.id;
+  const application =
+    user?.role === "employee" && job
+      ? getApplication(job.id, user.id)
+      : null;
 
-  if (!job) {
+  if (!user) {
+    return <Redirect href="/" />;
+  }
+
+  if (!job || employerCannotView) {
     return (
       <SafeAreaView style={styles.container}>
         <Text>Job not found.</Text>
@@ -28,6 +41,15 @@ export default function DetailsScreen() {
         />
       </SafeAreaView>
     );
+  }
+
+  function handleApply() {
+    try {
+      applyForJob(job.id, user);
+      setError("");
+    } catch (applyError) {
+      setError(applyError.message);
+    }
   }
 
   return (
@@ -99,7 +121,8 @@ export default function DetailsScreen() {
           </Text>
         </View>
 
-        {application ? (
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        {user.role === "employee" && application ? (
           <View style={styles.applicationState}>
             <Text style={styles.applicationMessage}>You have applied for this role.</Text>
             <StatusCard status={application.status} />
@@ -108,10 +131,15 @@ export default function DetailsScreen() {
               onPress={() => router.push('/(tabs)/applications')}
             />
           </View>
-        ) : (
+        ) : user.role === "employee" ? (
           <PrimaryButton
             title="SUBMIT APPLICATION"
-            onPress={() => applyForJob(job.id)}
+            onPress={handleApply}
+          />
+        ) : (
+          <PrimaryButton
+            title="MANAGE JOB LISTINGS"
+            onPress={() => router.push("/(tabs)/posts")}
           />
         )}
       </ScrollView>
@@ -178,6 +206,11 @@ const styles = StyleSheet.create({
   applicationMessage: {
     color: theme.fontColor.secondary,
     fontSize: theme.fontSize.medium,
+  },
+  errorText: {
+    color: "#B3261E",
+    fontSize: theme.fontSize.small,
+    textAlign: "center",
   },
 
   bulletRow: {

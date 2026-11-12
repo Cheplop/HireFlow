@@ -5,6 +5,8 @@ export const work = [
     jobTitle: "Front End Developer",
     jobLocation: "Los Angeles, CA",
     jobCompany: "Google",
+    employerId: "bill",
+    isPublished: true,
     jobMode: "Full-time",
     jobType: "On-site",
     jobDescription:
@@ -24,6 +26,8 @@ export const work = [
     jobTitle: "Back End Developer",
     jobLocation: "Los Cagayan, CA",
     jobCompany: "Amazon",
+    employerId: "bill",
+    isPublished: true,
     jobMode: "Part-time",
     jobType: "On-site",
     jobDescription:
@@ -42,6 +46,8 @@ export const work = [
     jobTitle: "Full End Developer",
     jobLocation: "Los Butuan, CA",
     jobCompany: "Nasa",
+    employerId: "bill",
+    isPublished: true,
     jobMode: "Part-time",
     jobType: "Remote",
     jobDescription:
@@ -60,6 +66,8 @@ export const work = [
     jobTitle: "Full End Developer",
     jobLocation: "Los Butuan, CA",
     jobCompany: "Nasa",
+    employerId: "bill",
+    isPublished: true,
     jobMode: "Full-time",
     jobType: "Remote",
     jobDescription:
@@ -78,6 +86,8 @@ export const work = [
     jobTitle: "Product Designer",
     jobLocation: "Manila, Philippines",
     jobCompany: "HireFlow",
+    employerId: "bill",
+    isPublished: true,
     jobMode: "Contractual",
     jobType: "Remote",
     jobDescription:
