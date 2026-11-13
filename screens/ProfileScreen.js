@@ -1,455 +1,396 @@
-import { useMemo, useState } from 'react';
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-import { router } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
+import { Alert, Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as ImagePicker from 'expo-image-picker';
+import { File, Paths } from 'expo-file-system';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+import ProfileContent from '../components/profile/ProfileContent';
+import { ProfileEditorModal, ProfilePhotoModal } from '../components/profile/ProfileModals';
 import {
-  Award,
-  Bell,
-  Briefcase,
-  CalendarDays,
-  GraduationCap,
-  MapPin,
-  Search,
-  UserRound,
-} from 'lucide-react-native';
-
-import { AuthInput } from '../components/AuthInput';
-import theme from '../styles/theme';
-
-const sections = ['Education', 'Job Experience', 'Licenses & Cert', 'About'];
-
-const education = [
-  {
-    group: 'Tertiary',
-    title: 'Harvard University',
-    subtitle: 'B.S in Information Technology',
-    date: '2016–2020',
-  },
-  {
-    group: 'Secondary',
-    title: 'Cagayan de Oro City National High School',
-    subtitle: 'High School Diploma',
-    date: '2012–2016',
-  },
-  {
-    group: 'Primary',
-    title: 'Cagayan de Oro City Central School',
-    subtitle: 'Elementary Education',
-    date: '2006–2012',
-  },
-];
-
-const experience = [
-  {
-    title: 'Senior Web Developer',
-    subtitle: 'Amazon Incorporated',
-    date: '2021–2025',
-    details: ['Quezon City, Philippines / Onsite', 'Full-time'],
-    description:
-      'Designed and developed responsive web applications, working with product and engineering teams to deliver reliable user experiences.',
-  },
-  {
-    title: 'Web Developer',
-    subtitle: 'Amazon Incorporated',
-    date: '2018–2021',
-    details: ['Cagayan de Oro City / Hybrid', 'Full-time'],
-    description:
-      'Built and maintained customer-facing web features and collaborated on accessibility and performance improvements.',
-  },
-];
-
-const certificates = [
-  {
-    title: 'Senior Web Developer',
-    subtitle: 'Amazon Incorporated',
-    date: '2021–2025',
-  },
-  {
-    title: 'AWS Certified Developer',
-    subtitle: 'Amazon Web Services',
-    date: '2023',
-  },
-  {
-    title: 'Professional Web Accessibility',
-    subtitle: 'W3C Training',
-    date: '2022',
-  },
-];
-
-function ProfileEntryCard({ item, icon: Icon, showDetails = false }) {
-  return (
-    <View style={styles.entryCard}>
-      <View style={styles.entryIcon}>
-        <Icon size={19} color={theme.colors.primary} />
-      </View>
-      <View style={styles.entryContent}>
-        <View style={styles.entryTitleRow}>
-          <Text style={styles.entryTitle} numberOfLines={1}>{item.title}</Text>
-          {!!item.date && <Text style={styles.entryDate}>{item.date}</Text>}
-        </View>
-        <Text style={styles.entrySubtitle}>{item.subtitle}</Text>
-        {showDetails && item.details?.map((detail, index) => (
-          <View key={detail} style={styles.detailRow}>
-            {index === 0
-              ? <MapPin size={14} color={theme.fontColor.primary} />
-              : <Briefcase size={14} color={theme.fontColor.primary} />}
-            <Text style={styles.detailText}>{detail}</Text>
-          </View>
-        ))}
-        {showDetails && !!item.description && (
-          <Text style={styles.entryDescription} numberOfLines={3}>
-            {item.description}
-          </Text>
-        )}
-      </View>
-    </View>
-  );
-}
+  FORMS,
+  initialAbout,
+  initialCertificates,
+  initialEducation,
+  initialExperience,
+  initialProfile,
+  makeId,
+  PHOTO_STORAGE_KEY,
+  sections,
+} from './ProfileScreen.data';
+import { styles } from './ProfileScreen.styles';
 
 export default function ProfileScreen() {
   const [activeSection, setActiveSection] = useState('Education');
   const [search, setSearch] = useState('');
+  const [isEditing, setIsEditing] = useState(false);
   const query = search.trim().toLowerCase();
+
+  const [profile, setProfile] = useState(initialProfile);
+  const [education, setEducation] = useState(initialEducation);
+  const [experience, setExperience] = useState(initialExperience);
+  const [certificates, setCertificates] = useState(initialCertificates);
+  const [about, setAbout] = useState(initialAbout);
+
+  // Photos: local image URIs (null = show the default placeholder)
+  const [avatarUri, setAvatarUri] = useState(null);
+  const [coverUri, setCoverUri] = useState(null);
+  const [photoTarget, setPhotoTarget] = useState(null); // 'avatar' | 'cover' | null
+  const [photosReady, setPhotosReady] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadPhotos = async () => {
+      try {
+        const savedPhotos = await AsyncStorage.getItem(PHOTO_STORAGE_KEY);
+        if (!savedPhotos) return;
+
+        const photos = JSON.parse(savedPhotos);
+        if (isMounted) {
+          setAvatarUri(typeof photos.avatarUri === 'string' ? photos.avatarUri : null);
+          setCoverUri(typeof photos.coverUri === 'string' ? photos.coverUri : null);
+        }
+      } catch (loadError) {
+        if (isMounted) {
+          Alert.alert(
+            'Could not load photos',
+            loadError instanceof Error ? loadError.message : 'Please try again.'
+          );
+        }
+      } finally {
+        if (isMounted) setPhotosReady(true);
+      }
+    };
+
+    loadPhotos();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // editor = { type: 'profile' | 'education' | ..., id: string | null }
+  const [editor, setEditor] = useState(null);
+  const [form, setForm] = useState({});
+  const [error, setError] = useState('');
 
   const filteredEducation = useMemo(
     () => education.filter((item) =>
       `${item.group} ${item.title} ${item.subtitle}`.toLowerCase().includes(query)
     ),
-    [query]
+    [education, query]
   );
   const filteredExperience = useMemo(
     () => experience.filter((item) =>
       `${item.title} ${item.subtitle} ${item.description}`.toLowerCase().includes(query)
     ),
-    [query]
+    [experience, query]
   );
   const filteredCertificates = useMemo(
     () => certificates.filter((item) =>
       `${item.title} ${item.subtitle}`.toLowerCase().includes(query)
     ),
-    [query]
+    [certificates, query]
   );
+
+  const lists = {
+    education: [education, setEducation],
+    experience: [experience, setExperience],
+    certificates: [certificates, setCertificates],
+  };
+
+  // ---------- Editor helpers ----------
+  const openEditor = (type, item = null) => {
+    let values = {};
+
+    if (type === 'profile') {
+      values = { ...profile };
+    } else if (type === 'about') {
+      values = {
+        text: about.text,
+        skills: about.skills.join(', '),
+        availability: about.availability,
+      };
+    } else if (type === 'experience') {
+      values = item
+        ? {
+            title: item.title,
+            subtitle: item.subtitle,
+            date: item.date,
+            location: item.details?.[0] ?? '',
+            type: item.details?.[1] ?? '',
+            description: item.description ?? '',
+          }
+        : {};
+    } else if (type === 'education') {
+      values = item ? { ...item } : { group: 'Tertiary' };
+    } else {
+      values = item ? { ...item } : {};
+    }
+
+    setForm(values);
+    setError('');
+    setEditor({ type, id: item?.id ?? null });
+  };
+
+  const closeEditor = () => {
+    setEditor(null);
+    setForm({});
+    setError('');
+  };
+
+  const saveEditor = () => {
+    const config = FORMS[editor.type];
+    const missing = config.fields.find((f) => f.required && !form[f.key]?.trim());
+
+    if (missing) {
+      setError(`${missing.label} is required.`);
+      return;
+    }
+
+    const clean = (key) => (form[key] ?? '').trim();
+
+    if (editor.type === 'profile') {
+      setProfile({ name: clean('name'), location: clean('location') });
+    } else if (editor.type === 'about') {
+      setAbout({
+        text: clean('text'),
+        skills: clean('skills')
+          .split(',')
+          .map((skill) => skill.trim())
+          .filter(Boolean),
+        availability: clean('availability'),
+      });
+    } else {
+      const [, setList] = lists[editor.type];
+      let record;
+
+      if (editor.type === 'experience') {
+        record = {
+          title: clean('title'),
+          subtitle: clean('subtitle'),
+          date: clean('date'),
+          details: [clean('location'), clean('type')],
+          description: clean('description'),
+        };
+      } else if (editor.type === 'education') {
+        record = {
+          group: form.group || 'Other',
+          title: clean('title'),
+          subtitle: clean('subtitle'),
+          date: clean('date'),
+        };
+      } else {
+        record = {
+          title: clean('title'),
+          subtitle: clean('subtitle'),
+          date: clean('date'),
+        };
+      }
+
+      if (editor.id) {
+        setList((prev) => prev.map((entry) => (
+          entry.id === editor.id ? { ...entry, ...record } : entry
+        )));
+      } else {
+        setList((prev) => [...prev, { id: makeId(editor.type), ...record }]);
+      }
+    }
+
+    closeEditor();
+  };
+
+  const confirmDelete = (type, item) => {
+    Alert.alert(
+      'Delete entry',
+      `Remove "${item.title}" from your profile?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => lists[type][1]((prev) => prev.filter((entry) => entry.id !== item.id)),
+        },
+      ]
+    );
+  };
+
+  const confirmClearAbout = () => {
+    Alert.alert(
+      'Clear about section',
+      'This removes your about text, skills and availability.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          style: 'destructive',
+          onPress: () => setAbout({ text: '', skills: [], availability: '' }),
+        },
+      ]
+    );
+  };
+
+  // ---------- Photo helpers ----------
+  const pickPhoto = async (target, source) => {
+    setPhotoTarget(null);
+
+    try {
+      const options = {
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: target === 'avatar' ? [1, 1] : [3, 1],
+        quality: 0.8,
+        base64: Platform.OS === 'web',
+      };
+      let result;
+
+      if (source === 'camera') {
+        const permission = await ImagePicker.requestCameraPermissionsAsync();
+        if (!permission.granted) {
+          Alert.alert('Camera access needed', 'Allow camera access in your settings to take a photo.');
+          return;
+        }
+        result = await ImagePicker.launchCameraAsync(options);
+      } else {
+        result = await ImagePicker.launchImageLibraryAsync(options);
+      }
+
+      if (result.canceled) return;
+      const asset = result.assets?.[0];
+      if (!asset?.uri) {
+        throw new Error('The selected photo is unavailable. Please try another photo.');
+      }
+
+      const photoKey = target === 'avatar' ? 'avatarUri' : 'coverUri';
+      const previousUri = target === 'avatar' ? avatarUri : coverUri;
+      let uri;
+      let copiedFile;
+
+      if (Platform.OS === 'web') {
+        if (!asset.base64) {
+          throw new Error('The selected photo could not be saved. Please try another photo.');
+        }
+        uri = `data:${asset.mimeType || 'image/jpeg'};base64,${asset.base64}`;
+      } else {
+        const sourceFile = new File(asset.uri);
+        if (!sourceFile.exists) {
+          throw new Error('The selected photo is no longer available. Please try again.');
+        }
+        copiedFile = new File(
+          Paths.document,
+          `hireflow-${target}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}${sourceFile.extension || '.jpg'}`
+        );
+        await sourceFile.copy(copiedFile);
+        uri = copiedFile.uri;
+      }
+
+      const nextPhotos = { avatarUri, coverUri, [photoKey]: uri };
+      try {
+        await AsyncStorage.setItem(PHOTO_STORAGE_KEY, JSON.stringify(nextPhotos));
+      } catch (saveError) {
+        try {
+          if (copiedFile?.exists) copiedFile.delete();
+        } catch (cleanupError) {
+          console.error('Could not clean up an unsaved profile photo.', cleanupError);
+        }
+        throw saveError;
+      }
+
+      if (target === 'avatar') setAvatarUri(uri);
+      else setCoverUri(uri);
+
+      if (previousUri && previousUri !== uri && Platform.OS !== 'web') {
+        try {
+          const previousFile = new File(previousUri);
+          if (previousFile.exists) previousFile.delete();
+        } catch (cleanupError) {
+          console.error('Could not remove the previous profile photo.', cleanupError);
+        }
+      }
+    } catch (pickError) {
+      Alert.alert(
+        'Could not load photo',
+        pickError instanceof Error ? pickError.message : 'Something went wrong. Please try again.'
+      );
+    }
+  };
+
+  const removePhoto = async (target) => {
+    const photoKey = target === 'avatar' ? 'avatarUri' : 'coverUri';
+    const previousUri = target === 'avatar' ? avatarUri : coverUri;
+    const nextPhotos = { avatarUri, coverUri, [photoKey]: null };
+
+    try {
+      await AsyncStorage.setItem(PHOTO_STORAGE_KEY, JSON.stringify(nextPhotos));
+    } catch (removeError) {
+      Alert.alert(
+        'Could not remove photo',
+        removeError instanceof Error ? removeError.message : 'Please try again.'
+      );
+      return;
+    }
+
+    if (target === 'avatar') setAvatarUri(null);
+    else setCoverUri(null);
+    setPhotoTarget(null);
+
+    if (previousUri && Platform.OS !== 'web') {
+      try {
+        const previousFile = new File(previousUri);
+        if (previousFile.exists) previousFile.delete();
+      } catch (cleanupError) {
+        console.error('Could not remove the profile photo file.', cleanupError);
+      }
+    }
+  };
+
+  const hasPhoto = photoTarget === 'avatar' ? !!avatarUri : !!coverUri;
+
+  const editorConfig = editor ? FORMS[editor.type] : null;
 
   return (
     <SafeAreaView style={styles.safeArea}>
-
-
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <View style={styles.cover}>
-          <View style={styles.avatar}>
-            <UserRound size={36} color={theme.colors.primary} />
-          </View>
-        </View>
-
-        <View style={styles.profileInfo}>
-          <Text style={styles.name}>Juan Dela Cruz</Text>
-          <View style={styles.location}>
-            <MapPin size={14} color={theme.fontColor.secondary} />
-            <Text style={styles.locationText}>Cagayan de Oro City</Text>
-          </View>
-        </View>
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.sectionTabs}
-        >
-          {sections.map((section) => {
-            const selected = activeSection === section;
-
-            return (
-              <Pressable
-                key={section}
-                accessibilityRole="tab"
-                accessibilityState={{ selected }}
-                onPress={() => setActiveSection(section)}
-                style={[styles.sectionTab, selected && styles.selectedSectionTab]}
-              >
-                <Text style={[styles.sectionTabText, selected && styles.selectedSectionTabText]}>
-                  {section}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-
-        {activeSection === 'Education' && (
-          <View style={styles.sectionContent}>
-            {filteredEducation.map((item) => (
-              <View key={item.group}>
-                <Text style={styles.groupTitle}>{item.group}</Text>
-                <ProfileEntryCard item={item} icon={GraduationCap} />
-              </View>
-            ))}
-            {filteredEducation.length === 0 && <EmptyResults />}
-          </View>
-        )}
-
-        {activeSection === 'Job Experience' && (
-          <View style={styles.sectionContent}>
-            {filteredExperience.map((item) => (
-              <ProfileEntryCard
-                key={`${item.title}-${item.date}`}
-                item={item}
-                icon={Briefcase}
-                showDetails
-              />
-            ))}
-            {filteredExperience.length === 0 && <EmptyResults />}
-          </View>
-        )}
-
-        {activeSection === 'Licenses & Cert' && (
-          <View style={styles.sectionContent}>
-            {filteredCertificates.map((item) => (
-              <ProfileEntryCard
-                key={`${item.title}-${item.date}`}
-                item={item}
-                icon={Award}
-              />
-            ))}
-            {filteredCertificates.length === 0 && <EmptyResults />}
-          </View>
-        )}
-
-        {activeSection === 'About' && (
-          <View style={styles.aboutCard}>
-            <Text style={styles.aboutTitle}>About me</Text>
-            <Text style={styles.aboutText}>
-              A passionate web developer with experience building accessible,
-              user-friendly products. I enjoy solving problems and collaborating
-              with teams to turn ideas into useful experiences.
-            </Text>
-            <Text style={styles.aboutTitle}>Skills</Text>
-            <View style={styles.skills}>
-              {['Web Development', 'JavaScript', 'UI/UX', 'Communication'].map((skill) => (
-                <Text key={skill} style={styles.skillChip}>{skill}</Text>
-              ))}
-            </View>
-            <View style={styles.detailRow}>
-              <CalendarDays size={15} color={theme.colors.primary} />
-              <Text style={styles.detailText}>Available for new opportunities</Text>
-            </View>
-          </View>
-        )}
-      </ScrollView>
+      <ProfileContent
+        profile={profile}
+        coverUri={coverUri}
+        avatarUri={avatarUri}
+        photosReady={photosReady}
+        isEditing={isEditing}
+        onPhotoTarget={setPhotoTarget}
+        onToggleEditing={() => setIsEditing((value) => !value)}
+        onEditProfile={() => openEditor('profile')}
+        sections={sections}
+        activeSection={activeSection}
+        onSelectSection={setActiveSection}
+        filteredEducation={filteredEducation}
+        educationEmpty={education.length === 0}
+        filteredExperience={filteredExperience}
+        experienceEmpty={experience.length === 0}
+        filteredCertificates={filteredCertificates}
+        certificatesEmpty={certificates.length === 0}
+        about={about}
+        onAdd={(type) => openEditor(type)}
+        onEdit={(type, item) => openEditor(type, item)}
+        onDelete={confirmDelete}
+        onClearAbout={confirmClearAbout}
+      />
+      <ProfileEditorModal
+        editor={editor}
+        config={editorConfig}
+        form={form}
+        setForm={setForm}
+        error={error}
+        setError={setError}
+        onClose={closeEditor}
+        onSave={saveEditor}
+      />
+      <ProfilePhotoModal
+        photoTarget={photoTarget}
+        hasPhoto={hasPhoto}
+        onPickPhoto={pickPhoto}
+        onRemovePhoto={removePhoto}
+        onClose={() => setPhotoTarget(null)}
+      />
     </SafeAreaView>
   );
 }
-
-function EmptyResults() {
-  return <Text style={styles.emptyText}>No profile information matches your search.</Text>;
-}
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-    paddingHorizontal: 22,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: theme.spacing.small,
-  },
-  search: {
-    flex: 1,
-    height: 55,
-  },
-  notification: {
-    width: 48,
-    height: 48,
-    marginTop: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: theme.radius.large,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.cardBackground,
-  },
-  scrollContent: {
-    paddingBottom: 105,
-  },
-  cover: {
-    height: 106,
-    marginTop: 2,
-    borderTopLeftRadius: theme.radius.medium,
-    borderTopRightRadius: theme.radius.medium,
-    backgroundColor: '#DCE3EF',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-  },
-  avatar: {
-    width: 68,
-    height: 68,
-    marginBottom: -31,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 34,
-    borderWidth: 4,
-    borderColor: theme.colors.cardBackground,
-    backgroundColor: '#EEF2F8',
-  },
-  profileInfo: {
-    alignItems: 'center',
-    paddingTop: 39,
-    paddingBottom: theme.spacing.medium,
-  },
-  name: {
-    color: theme.fontColor.primary,
-    fontSize: theme.fontSize.large,
-    fontWeight: '700',
-  },
-  location: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    marginTop: 4,
-  },
-  locationText: {
-    color: theme.fontColor.secondary,
-    fontSize: theme.fontSize.small,
-  },
-  sectionTabs: {
-    gap: 6,
-    paddingBottom: theme.spacing.medium,
-  },
-  sectionTab: {
-    minHeight: 34,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 13,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: theme.radius.large,
-    backgroundColor: theme.colors.cardBackground,
-  },
-  selectedSectionTab: {
-    backgroundColor: '#4B5694',
-    borderColor: '#4B5694',
-  },
-  sectionTabText: {
-    color: theme.fontColor.secondary,
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  selectedSectionTabText: {
-    color: '#FFFFFF',
-  },
-  sectionContent: {
-    gap: theme.spacing.small,
-  },
-  groupTitle: {
-    color: theme.fontColor.primary,
-    fontSize: theme.fontSize.medium,
-    fontWeight: '600',
-    marginBottom: 7,
-  },
-  entryCard: {
-    minHeight: 68,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: theme.spacing.small,
-    padding: 11,
-    borderRadius: theme.radius.medium,
-    backgroundColor: theme.colors.cardBackground,
-    boxShadow: theme.boxShadow.default,
-  },
-  entryIcon: {
-    width: 34,
-    height: 34,
-    flexShrink: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 8,
-    backgroundColor: '#EEF2F8',
-  },
-  entryContent: {
-    flex: 1,
-    minWidth: 0,
-  },
-  entryTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: 6,
-  },
-  entryTitle: {
-    flex: 1,
-    color: theme.fontColor.primary,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  entryDate: {
-    color: theme.fontColor.secondary,
-    fontSize: 9,
-  },
-  entrySubtitle: {
-    color: theme.fontColor.secondary,
-    fontSize: 10,
-    marginTop: 3,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    marginTop: 7,
-  },
-  detailText: {
-    flex: 1,
-    color: theme.fontColor.primary,
-    fontSize: 11,
-  },
-  entryDescription: {
-    color: theme.fontColor.secondary,
-    fontSize: 11,
-    lineHeight: 16,
-    marginTop: 8,
-  },
-  emptyText: {
-    color: theme.fontColor.secondary,
-    fontSize: theme.fontSize.small,
-    paddingVertical: theme.spacing.large,
-    textAlign: 'center',
-  },
-  aboutCard: {
-    gap: theme.spacing.small,
-    padding: theme.spacing.medium,
-    borderRadius: theme.radius.medium,
-    backgroundColor: theme.colors.cardBackground,
-    boxShadow: theme.boxShadow.default,
-  },
-  aboutTitle: {
-    color: theme.fontColor.primary,
-    fontSize: theme.fontSize.medium,
-    fontWeight: '700',
-    marginTop: 3,
-  },
-  aboutText: {
-    color: theme.fontColor.secondary,
-    fontSize: theme.fontSize.small,
-    lineHeight: 19,
-  },
-  skills: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 7,
-  },
-  skillChip: {
-    color: '#4B5694',
-    fontSize: 11,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: theme.radius.large,
-    backgroundColor: '#EAF2FF',
-  },
-});

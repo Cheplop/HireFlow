@@ -1,3 +1,4 @@
+
 import { createContext, useCallback, useContext } from "react";
 import { useApplications } from "./ApplicationsContext";
 import { useJobs } from "./JobsContext";
@@ -10,17 +11,21 @@ export function ApplicantsProvider({ children }) {
     getApplicationById,
     setApplicationStatus,
   } = useApplications();
+
   const { getJobById } = useJobs();
 
   const getApplicantsByJob = useCallback(
     (jobId, employerId) => {
       const job = getJobById(jobId);
+
       if (!job || job.employerId !== employerId) return [];
 
       return getApplicationsForJob(job.id).map((application) => ({
         ...application.applicant,
         id: application.id,
+        jobId: application.jobId,
         status: application.status,
+        coverLetter: application.coverLetter || "",
       }));
     },
     [getApplicationsForJob, getJobById],
@@ -29,6 +34,7 @@ export function ApplicantsProvider({ children }) {
   const getStatus = useCallback(
     (applicationId, jobId) => {
       const application = getApplicationById(applicationId);
+
       return application?.jobId === Number(jobId)
         ? application.status
         : "Pending";
@@ -39,9 +45,11 @@ export function ApplicantsProvider({ children }) {
   const updateApplicationStatus = useCallback(
     (applicationId, jobId, status, employerId) => {
       const application = getApplicationById(applicationId);
+
       if (!application || application.jobId !== Number(jobId)) {
         throw new Error("Application not found for this job.");
       }
+
       setApplicationStatus(applicationId, employerId, status);
     },
     [getApplicationById, setApplicationStatus],
@@ -64,7 +72,9 @@ export function useApplicants() {
   const context = useContext(ApplicantsContext);
 
   if (!context) {
-    throw new Error("useApplicants must be used within ApplicantsProvider.");
+    throw new Error(
+      "useApplicants must be used within ApplicantsProvider.",
+    );
   }
 
   return context;

@@ -41,6 +41,14 @@
       ],
       "expo-font",
       "expo-image",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow HireFlow to choose profile and cover photos.",
+          "cameraPermission": "Allow HireFlow to take profile and cover photos.",
+          "microphonePermission": false
+        }
+      ],
       "expo-status-bar",
       "expo-web-browser",
       "expo-asset"

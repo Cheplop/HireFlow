@@ -1,12 +1,20 @@
-import { StyleSheet, Text, View, ScrollView } from "react-native";
+
+import { useState } from "react";
+import {
+  StyleSheet,
+  Text,
+  View,
+  ScrollView,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Redirect, router, useLocalSearchParams } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
-import { useState } from "react";
 
 import { PrimaryButton } from "../components/PrimaryButton";
 import JobDetailsCard from "../components/JobDetailsCard";
 import StatusCard from "../components/StatusCard";
+import CoverLetterInput from "../components/CoverLetterInput";
+
 import { useAuth } from "../contexts/AuthContext";
 import { useApplications } from "../contexts/ApplicationsContext";
 import { useJobs } from "../contexts/JobsContext";
@@ -14,13 +22,20 @@ import theme from "../styles/theme";
 
 export default function DetailsScreen() {
   const { id } = useLocalSearchParams();
+
   const { user } = useAuth();
   const { getJobById } = useJobs();
   const { applyForJob, getApplication } = useApplications();
+
+  const [coverLetter, setCoverLetter] = useState("");
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const job = getJobById(id);
+
   const employerCannotView =
     user?.role === "employer" && job?.employerId !== user.id;
+
   const application =
     user?.role === "employee" && job
       ? getApplication(job.id, user.id)
@@ -44,11 +59,26 @@ export default function DetailsScreen() {
   }
 
   function handleApply() {
+    if (isSubmitting) return;
+
+    const trimmedCoverLetter = coverLetter.trim();
+
+    if (trimmedCoverLetter.length < 50) {
+      setError(
+        "Your cover letter must contain at least 50 characters."
+      );
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError("");
+
     try {
-      applyForJob(job.id, user);
-      setError("");
+      applyForJob(job.id, user, trimmedCoverLetter);
     } catch (applyError) {
       setError(applyError.message);
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -71,7 +101,6 @@ export default function DetailsScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Selected Job Card */}
         <JobDetailsCard
           jobMode={job.jobMode}
           jobType={job.jobType}
@@ -80,7 +109,6 @@ export default function DetailsScreen() {
           company={job.jobCompany}
         />
 
-        {/* Job Description */}
         <View style={styles.detailsContainer}>
           <Text style={styles.subHeading}>
             Job Description
@@ -94,7 +122,8 @@ export default function DetailsScreen() {
             Responsibilities
           </Text>
 
-          {job.responsibilities && job.responsibilities.length > 0 ? (
+          {job.responsibilities &&
+          job.responsibilities.length > 0 ? (
             job.responsibilities.map((item, index) => (
               <View key={index} style={styles.bulletRow}>
                 <Text style={styles.bulletIcon}>•</Text>
@@ -102,7 +131,9 @@ export default function DetailsScreen() {
               </View>
             ))
           ) : (
-            <Text style={styles.fallbackText}>No responsibilities specified.</Text>
+            <Text style={styles.fallbackText}>
+              No responsibilities specified.
+            </Text>
           )}
 
           <Text style={styles.subHeading}>
@@ -115,25 +146,54 @@ export default function DetailsScreen() {
               : "Salary not specified."}
           </Text>
 
-          <Text style={styles.subHeading}>About {job.jobCompany}</Text>
+          <Text style={styles.subHeading}>
+            About {job.jobCompany}
+          </Text>
+
           <Text style={styles.bodyText}>
-            {job.companyDescription || `${job.jobCompany} is hiring for this opportunity.`}
+            {job.companyDescription ||
+              `${job.jobCompany} is hiring for this opportunity.`}
           </Text>
         </View>
 
-        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        {/* Cover Letter */}
+        {user.role === "employee" && !application && (
+          <CoverLetterInput
+            value={coverLetter}
+            onChangeText={(value) => {
+              setCoverLetter(value);
+              if (error) setError("");
+            }}
+          />
+        )}
+
+        {error ? (
+          <Text style={styles.errorText}>{error}</Text>
+        ) : null}
+
+        {/* Application Actions */}
         {user.role === "employee" && application ? (
           <View style={styles.applicationState}>
-            <Text style={styles.applicationMessage}>You have applied for this role.</Text>
+            <Text style={styles.applicationMessage}>
+              You have applied for this role.
+            </Text>
+
             <StatusCard status={application.status} />
+
             <PrimaryButton
               title="VIEW APPLICATIONS"
-              onPress={() => router.push('/(tabs)/applications')}
+              onPress={() =>
+                router.push("/(tabs)/applications")
+              }
             />
           </View>
         ) : user.role === "employee" ? (
           <PrimaryButton
-            title="SUBMIT APPLICATION"
+            title={
+              isSubmitting
+                ? "SUBMITTING..."
+                : "SUBMIT APPLICATION"
+            }
             onPress={handleApply}
           />
         ) : (
@@ -207,6 +267,7 @@ const styles = StyleSheet.create({
     color: theme.fontColor.secondary,
     fontSize: theme.fontSize.medium,
   },
+
   errorText: {
     color: "#B3261E",
     fontSize: theme.fontSize.small,
