@@ -11,7 +11,7 @@ import { useState } from "react";
 import { router } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
 
-import { PrimaryButton } from "@/components/PrimaryButton";
+import { PrimaryButton } from "@/components/common/PrimaryButton";
 
 // The inputs are described once here, then drawn with .map() below.
 const FIELDS = [

@@ -1,6 +1,6 @@
 import { StyleSheet, View, Text, Image } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import theme from "../styles/theme";
+import theme from "../../styles/theme";
 
 export default function JobDetailsCard({
   jobMode,

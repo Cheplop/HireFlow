@@ -1,8 +1,8 @@
 import { ScrollView, StyleSheet, Text, View} from "react-native";
 import { router } from "expo-router";
 
-import { AuthInput } from "@/components/AuthInput";
-import { PrimaryButton } from "@/components/PrimaryButton";
+import { AuthInput } from "@/components/common/AuthInput";
+import { PrimaryButton } from "@/components/common/PrimaryButton";
 
 import { ChevronLeft } from "lucide-react-native";
 

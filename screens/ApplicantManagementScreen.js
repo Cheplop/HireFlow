@@ -3,9 +3,9 @@ import { useMemo, useState } from "react";
 import { FlatList, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import ApplicantCard from "@/components/ApplicantCard";
-import { AuthInput } from "@/components/AuthInput";
-import { PrimaryButton } from "@/components/PrimaryButton";
+import ApplicantCard from "@/components/employer/ApplicantCard";
+import { AuthInput } from "@/components/common/AuthInput";
+import { PrimaryButton } from "@/components/common/PrimaryButton";
 import { useAuth } from "../contexts/AuthContext";
 import { useApplicants } from "../contexts/ApplicantsContext";
 import { useJobs } from "../contexts/JobsContext";

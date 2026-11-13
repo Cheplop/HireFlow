@@ -10,10 +10,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Redirect, router, useLocalSearchParams } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
 
-import { PrimaryButton } from "../components/PrimaryButton";
-import JobDetailsCard from "../components/JobDetailsCard";
-import StatusCard from "../components/StatusCard";
-import CoverLetterInput from "../components/CoverLetterInput";
+import { PrimaryButton } from "../components/common/PrimaryButton";
+import JobDetailsCard from "../components/employee/JobDetailsCard";
+import StatusCard from "../components/common/StatusCard";
+import CoverLetterInput from "../components/employee/CoverLetterInput";
 
 import { useAuth } from "../contexts/AuthContext";
 import { useApplications } from "../contexts/ApplicationsContext";

@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, Image, Platform, TouchableOpacity } from 'react-native';
-import theme from '../styles/theme';
-import StatusCard from './StatusCard';
-import { AuthInput } from './AuthInput';
-import { PrimaryButton } from './PrimaryButton';
+import theme from '../../styles/theme';
+import StatusCard from '../common/StatusCard';
+import { AuthInput } from '../common/AuthInput';
+import { PrimaryButton } from '../common/PrimaryButton';
 
 export default function ApplicationsCard({
   application,

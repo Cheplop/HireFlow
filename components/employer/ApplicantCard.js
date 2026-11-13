@@ -1,8 +1,8 @@
 import { useRouter } from "expo-router";
 import { ChevronRight } from "lucide-react-native";
 import { Image, Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import theme from "../styles/theme";
-import StatusCard from "./StatusCard";
+import theme from "../../styles/theme";
+import StatusCard from "../common/StatusCard";
 
 export default function ApplicantCard({ applicant, jobId, status }) {
   const router = useRouter();
