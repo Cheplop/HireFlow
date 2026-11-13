@@ -10,8 +10,8 @@ import {
 import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { PrimaryButton } from "@/components/PrimaryButton";
-import StatusCard from "@/components/StatusCard";
+import { PrimaryButton } from "@/components/common/PrimaryButton";
+import StatusCard from "@/components/common/StatusCard";
 import { useAuth } from "../../contexts/AuthContext";
 import { useApplications } from "../../contexts/ApplicationsContext";
 import { useJobs } from "../../contexts/JobsContext";

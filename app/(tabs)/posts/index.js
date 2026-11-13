@@ -3,8 +3,8 @@ import { useState } from 'react';
 import { View, Text, FlatList, Image, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { PrimaryButton } from '../../../components/PrimaryButton';
-import { AuthInput } from '../../../components/AuthInput';
+import { PrimaryButton } from '../../../components/common/PrimaryButton';
+import { AuthInput } from '../../../components/common/AuthInput';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useApplications } from '../../../contexts/ApplicationsContext';
 import { useJobs } from '../../../contexts/JobsContext';

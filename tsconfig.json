@@ -15,8 +15,8 @@
     "expo-env.d.ts",
     "app/login.js",
     "app/register.jsxs",
-    "components/PrimaryButton.js",
-    "components/AuthInput.js",
+    "components/common/PrimaryButton.js",
+    "components/common/AuthInput.js",
     "app/(tabs)/index.js"
   ]
 }

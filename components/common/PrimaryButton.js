@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text } from 'react-native';
-import theme from '../styles/theme';
+import theme from '../../styles/theme';
 
 export function PrimaryButton({ title, variant = 'primary', style, ...props }) {
     return (

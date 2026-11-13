@@ -1,7 +1,7 @@
 
 import { StyleSheet, Text, View, Image } from 'react-native';
-import theme from '../styles/theme';
-import { PrimaryButton } from './PrimaryButton';
+import theme from '../../styles/theme';
+import { PrimaryButton } from '../common/PrimaryButton';
 import { Briefcase, MapPin } from 'lucide-react-native';
 
 export function ApplyCard({

@@ -3,9 +3,9 @@ import { FlatList, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Search } from 'lucide-react-native';
 
-import { AuthInput } from '@/components/AuthInput';
-import ApplicationsCard from '@/components/ApplicationsCard';
-import { PrimaryButton } from '@/components/PrimaryButton';
+import { AuthInput } from '@/components/common/AuthInput';
+import ApplicationsCard from '@/components/employee/ApplicationsCard';
+import { PrimaryButton } from '@/components/common/PrimaryButton';
 import { useAuth } from '../contexts/AuthContext';
 import { useApplications } from '../contexts/ApplicationsContext';
 import { useJobs } from '../contexts/JobsContext';

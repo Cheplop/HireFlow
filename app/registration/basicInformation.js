@@ -1,6 +1,6 @@
 import { View, Text, StyleSheet, ScrollView} from "react-native";
-import { AuthInput } from "@/components/AuthInput";
-import { PrimaryButton } from "@/components/PrimaryButton";
+import { AuthInput } from "@/components/common/AuthInput";
+import { PrimaryButton } from "@/components/common/PrimaryButton";
 import { router } from "expo-router";
 import theme from "../../styles/theme";
 

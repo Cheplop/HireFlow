@@ -4,9 +4,9 @@ import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Bell, Search } from 'lucide-react-native';
 
-import { ApplyCard } from '@/components/ApplyCard';
-import { AuthInput } from '@/components/AuthInput';
-import { PrimaryButton } from '@/components/PrimaryButton';
+import { ApplyCard } from '@/components/employee/ApplyCard';
+import { AuthInput } from '@/components/common/AuthInput';
+import { PrimaryButton } from '@/components/common/PrimaryButton';
 import { useAuth } from '../contexts/AuthContext';
 import { useJobs } from '../contexts/JobsContext';
 import theme from '../styles/theme';
