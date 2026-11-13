@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import { View, Text, StyleSheet, Image, Platform, TouchableOpacity } from 'react-native';
 import theme from '../styles/theme';
 import StatusCard from './StatusCard';
 import { AuthInput } from './AuthInput';
@@ -11,20 +11,29 @@ export default function ApplicationsCard({
   onUpdate,
   onWithdraw,
 }) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [coverLetter, setCoverLetter] = useState(application.coverLetter || '');
   const [error, setError] = useState('');
   const canEdit = application.status === 'Pending';
 
-  function saveChanges() {
-    try {
-      onUpdate(application.id, coverLetter);
-      setIsEditing(false);
-      setError('');
-    } catch (updateError) {
-      setError(updateError.message);
-    }
+function saveChanges() {
+  const trimmedCoverLetter = coverLetter.trim();
+
+  if (trimmedCoverLetter.length < 50) {
+    setError('Cover letter must be at least 50 characters.');
+    return;
   }
+
+  try {
+    onUpdate(application.id, trimmedCoverLetter);
+    setCoverLetter(trimmedCoverLetter);
+    setIsEditing(false);
+    setError('');
+  } catch (updateError) {
+    setError(updateError.message);
+  }
+}
 
   function withdraw() {
     try {
@@ -36,72 +45,92 @@ export default function ApplicationsCard({
 
   return (
     <View style={styles.card}>
-      <View style={styles.header}>
+      {/* Tapping the header toggles the expanded state */}
+      <TouchableOpacity 
+        style={styles.header} 
+        activeOpacity={0.7} 
+        onPress={() => {
+          setIsExpanded(!isExpanded);
+          if (isEditing) {
+            setIsEditing(false); // Reset editing mode when collapsing
+          }
+        }}
+      >
         <View style={styles.imageContainer}>
           <Image source={job.companyLogo} style={styles.image} resizeMode="contain" />
         </View>
         <View style={styles.cardContent}>
-          <View style={styles.statusRow}>
-            <Text style={styles.statusLabel}>Application status: </Text>
+          <Text style={styles.statusLabel}>
+            Application status:{' '}
             <Text style={styles.statusLabelText}>{application.status}</Text>
-            <StatusCard status={application.status} />
-          </View>
+          </Text>
           <Text style={styles.cardTitle} numberOfLines={1}>{job.jobTitle}</Text>
-          <Text style={styles.cardCompany}>{job.jobCompany}</Text>
+          <Text style={styles.cardCompany} numberOfLines={1}>{job.jobCompany}</Text>
         </View>
-      </View>
+        <View style={styles.statusContainer}>
+          <StatusCard status={application.status} />
+        </View>
+      </TouchableOpacity>
 
-      {isEditing ? (
-        <AuthInput
-          label="Cover letter"
-          value={coverLetter}
-          onChangeText={setCoverLetter}
-          placeholder="Add a short note to the employer"
-          multiline
-          numberOfLines={4}
-          textAlignVertical="top"
-          style={styles.coverLetterInput}
-        />
-      ) : coverLetter ? (
-        <Text style={styles.coverLetter}>Cover letter: {coverLetter}</Text>
-      ) : null}
-
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-      {canEdit ? (
-        <View style={styles.actions}>
+      {/* Expanded Content: Cover Letter & Actions */}
+      {isExpanded && (
+        <View style={styles.expandedSection}>
           {isEditing ? (
-            <>
-              <PrimaryButton title="Save" onPress={saveChanges} style={styles.actionButton} />
-              <PrimaryButton
-                title="Cancel"
-                variant="secondary"
-                onPress={() => {
-                  setCoverLetter(application.coverLetter || '');
-                  setIsEditing(false);
-                  setError('');
-                }}
-                style={styles.actionButton}
-              />
-            </>
-          ) : (
-            <>
-              <PrimaryButton
-                title="Edit"
-                variant="secondary"
-                onPress={() => setIsEditing(true)}
-                style={styles.actionButton}
-              />
-              <PrimaryButton
-                title="Withdraw"
-                variant="secondary"
-                onPress={withdraw}
-                style={styles.actionButton}
-              />
-            </>
+            <AuthInput
+              label="Cover letter"
+              value={coverLetter}
+              onChangeText={setCoverLetter}
+              placeholder="Add a short note to the employer"
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+              style={styles.coverLetterInput}
+            />
+          ) : coverLetter ? (
+            <View style={styles.coverLetterContainer}>
+              <Text style={styles.coverLetterLabel}>Cover letter:</Text>
+              <Text style={styles.coverLetterText} numberOfLines={3}>{coverLetter}</Text>
+            </View>
+          ) : null}
+
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+          {canEdit && (
+            <View style={styles.actions}>
+              {isEditing ? (
+                <>
+                  <PrimaryButton title="Save" onPress={saveChanges} style={styles.actionButton} />
+                  <PrimaryButton
+                    title="Cancel"
+                    variant="secondary"
+                    onPress={() => {
+                      setCoverLetter(application.coverLetter || '');
+                      setIsEditing(false);
+                      setError('');
+                    }}
+                    style={styles.actionButton}
+                  />
+                </>
+              ) : (
+                <>
+                  <PrimaryButton
+                    title="Edit"
+                    variant="secondary"
+                    onPress={() => setIsEditing(true)}
+                    style={styles.actionButton}
+                  />
+                  <PrimaryButton
+                    title="Withdraw"
+                    variant="secondary"
+                    onPress={withdraw}
+                    style={styles.actionButton}
+                  />
+                </>
+              )}
+            </View>
           )}
         </View>
-      ) : null}
+      )}
     </View>
   );
 }
@@ -109,31 +138,58 @@ export default function ApplicationsCard({
 const styles = StyleSheet.create({
   card: {
     width: '100%',
-    minHeight: 100,
     padding: theme.spacing.medium,
     borderRadius: theme.radius.large,
     flexDirection: 'column',
     gap: theme.spacing.medium,
     backgroundColor: theme.colors.cardBackground,
-    boxShadow: theme.boxShadow.default,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 3,
+      },
+      default: {
+        boxShadow: theme.boxShadow?.default,
+      },
+    }),
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: theme.spacing.medium,
   },
   imageContainer: {
     backgroundColor: theme.colors.cardBackground,
-    width: 56,
-    height: 56,
+    width: 52,
+    height: 52,
     borderRadius: theme.radius.small,
-    boxShadow: theme.boxShadow.default,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.04)',
   },
   image: {
-    width: 38,
-    height: 38,
+    width: 32,
+    height: 32,
+  },
+  cardContent: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  statusLabel: {
+    color: theme.fontColor.secondary,
+    fontSize: 11,
+    marginBottom: 4,
+  },
+  statusLabelText: {
+    color: theme.fontColor.primary,
+    fontSize: 11,
+    fontWeight: theme.fontWeight.bold,
   },
   cardTitle: {
     fontSize: theme.fontSize.medium,
@@ -145,31 +201,34 @@ const styles = StyleSheet.create({
     color: theme.fontColor.secondary,
     marginTop: 3,
   },
-  cardContent: {
-    flex: 1,
+  statusContainer: {
+    alignItems: 'flex-start',
     justifyContent: 'center',
   },
-  statusLabel: {
-    color: theme.fontColor.secondary,
-    fontSize: 11,
-    marginBottom: 5,
+  expandedSection: {
+    flexDirection: 'column',
+    gap: theme.spacing.medium,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.04)',
+    paddingTop: theme.spacing.medium,
   },
-  statusLabelText: {
+  coverLetterContainer: {
+    backgroundColor: 'rgba(0,0,0,0.02)',
+    padding: theme.spacing.small,
+    borderRadius: theme.radius.small,
+    gap: 2,
+  },
+  coverLetterLabel: {
+    fontSize: 12,
+    fontWeight: 'bold',
     color: theme.fontColor.primary,
-    fontSize: 11,
-    fontWeight: theme.fontWeight.bold,
   },
-  statusRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
+  coverLetterText: {
+    color: theme.fontColor.secondary,
+    fontSize: theme.fontSize.small,
   },
   coverLetterInput: {
     marginBottom: 0,
-  },
-  coverLetter: {
-    color: theme.fontColor.secondary,
-    fontSize: theme.fontSize.small,
   },
   errorText: {
     color: '#B3261E',

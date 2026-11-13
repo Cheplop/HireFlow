@@ -1,3 +1,4 @@
+
 import {
   createContext,
   useCallback,
@@ -5,6 +6,7 @@ import {
   useRef,
   useState,
 } from "react";
+
 import { applicants as seedApplicants } from "../data/applicants";
 import { work } from "../data/jobs";
 import { useJobs } from "./JobsContext";
@@ -13,6 +15,8 @@ const ApplicationsContext = createContext(null);
 
 export function ApplicationsProvider({ children }) {
   const { getJobById } = useJobs();
+
+  // Seed existing sample applications
   const seededApplications = seedApplicants.flatMap((applicant) =>
     applicant.appliedJobIds.map((jobId) => ({
       jobId,
@@ -22,6 +26,8 @@ export function ApplicationsProvider({ children }) {
       coverLetter: "",
     })),
   );
+
+  // Preserve existing legacy applications
   const legacyApplications = work
     .filter((job) => job.status)
     .map((job) => ({
@@ -41,17 +47,37 @@ export function ApplicationsProvider({ children }) {
       status: job.status,
       coverLetter: "",
     }));
-  const initialApplications = [...seededApplications, ...legacyApplications].map(
-    (application, index) => ({ ...application, id: index + 1 }),
-  );
+
+  const initialApplications = [
+    ...seededApplications,
+    ...legacyApplications,
+  ].map((application, index) => ({
+    ...application,
+    id: index + 1,
+  }));
+
   const [applications, setApplications] = useState(initialApplications);
   const nextApplicationId = useRef(initialApplications.length + 1);
 
+  // Create an application
   const applyForJob = useCallback(
-    (jobId, user) => {
+    (jobId, user, coverLetter) => {
       const job = getJobById(jobId);
+
       if (user?.role !== "employee" || !job?.isPublished) {
         throw new Error("This job is not available for your account.");
+      }
+
+      const trimmedCoverLetter =
+        typeof coverLetter === "string" ? coverLetter.trim() : "";
+
+      if (
+        trimmedCoverLetter.length < 50 ||
+        trimmedCoverLetter.length > 1000
+      ) {
+        throw new Error(
+          "Your cover letter must contain between 50 and 1000 characters.",
+        );
       }
 
       if (
@@ -80,15 +106,19 @@ export function ApplicationsProvider({ children }) {
           about: "",
         },
         status: "Pending",
-        coverLetter: "",
+        coverLetter: trimmedCoverLetter,
       };
+
       nextApplicationId.current += 1;
+
       setApplications((current) => [...current, application]);
+
       return application;
     },
     [applications, getJobById],
   );
 
+  // Get one employee's application for a specific job
   const getApplication = useCallback(
     (jobId, employeeId) =>
       applications.find(
@@ -99,14 +129,17 @@ export function ApplicationsProvider({ children }) {
     [applications],
   );
 
+  // Get application using its ID
   const getApplicationById = useCallback(
     (applicationId) =>
       applications.find(
-        (application) => String(application.id) === String(applicationId),
+        (application) =>
+          String(application.id) === String(applicationId),
       ),
     [applications],
   );
 
+  // Get all applications submitted by an employee
   const getApplicationsForEmployee = useCallback(
     (employeeId) =>
       applications.filter(
@@ -115,6 +148,7 @@ export function ApplicationsProvider({ children }) {
     [applications],
   );
 
+  // Get all applications submitted to a job
   const getApplicationsForJob = useCallback(
     (jobId) =>
       applications.filter(
@@ -123,9 +157,11 @@ export function ApplicationsProvider({ children }) {
     [applications],
   );
 
+  // Allow employees to edit their pending applications
   const updateEmployeeApplication = useCallback(
     (applicationId, employeeId, changes) => {
       const application = getApplicationById(applicationId);
+
       if (
         !application ||
         application.employeeId !== employeeId ||
@@ -134,10 +170,24 @@ export function ApplicationsProvider({ children }) {
         throw new Error("Only your pending applications can be edited.");
       }
 
+      const trimmedCoverLetter =
+        typeof changes.coverLetter === "string"
+          ? changes.coverLetter.trim()
+          : "";
+
+      if (
+        trimmedCoverLetter.length < 50 ||
+        trimmedCoverLetter.length > 1000
+      ) {
+        throw new Error(
+          "Your cover letter must contain between 50 and 1000 characters.",
+        );
+      }
+
       setApplications((current) =>
         current.map((item) =>
           item.id === application.id
-            ? { ...item, coverLetter: changes.coverLetter }
+            ? { ...item, coverLetter: trimmedCoverLetter }
             : item,
         ),
       );
@@ -145,15 +195,19 @@ export function ApplicationsProvider({ children }) {
     [getApplicationById],
   );
 
+  // Allow employees to withdraw pending applications
   const withdrawApplication = useCallback(
     (applicationId, employeeId) => {
       const application = getApplicationById(applicationId);
+
       if (
         !application ||
         application.employeeId !== employeeId ||
         application.status !== "Pending"
       ) {
-        throw new Error("Only your pending applications can be withdrawn.");
+        throw new Error(
+          "Only your pending applications can be withdrawn.",
+        );
       }
 
       setApplications((current) =>
@@ -163,37 +217,55 @@ export function ApplicationsProvider({ children }) {
     [getApplicationById],
   );
 
+  // Allow employers to update application status
   const setApplicationStatus = useCallback(
     (applicationId, employerId, status) => {
       const application = getApplicationById(applicationId);
       const job = application && getJobById(application.jobId);
-      const allowedStatuses = ["Pending", "Accepted", "Declined", "Completed"];
+
+      const allowedStatuses = [
+        "Pending",
+        "Accepted",
+        "Declined",
+        "Completed",
+      ];
 
       if (!application || !job || job.employerId !== employerId) {
-        throw new Error("You can only manage applicants for your own jobs.");
+        throw new Error(
+          "You can only manage applicants for your own jobs.",
+        );
       }
+
       if (!allowedStatuses.includes(status)) {
         throw new Error("Choose a valid application status.");
       }
 
       setApplications((current) =>
         current.map((item) =>
-          item.id === application.id ? { ...item, status } : item,
+          item.id === application.id
+            ? { ...item, status }
+            : item,
         ),
       );
     },
     [getApplicationById, getJobById],
   );
 
+  // Allow employers to delete applications for their own jobs
   const deleteApplicationsForJob = useCallback(
     (jobId, employerId) => {
       const job = getJobById(jobId);
+
       if (!job || job.employerId !== employerId) {
-        throw new Error("You can only delete applicants for your own jobs.");
+        throw new Error(
+          "You can only delete applicants for your own jobs.",
+        );
       }
 
       setApplications((current) =>
-        current.filter((application) => application.jobId !== job.id),
+        current.filter(
+          (application) => application.jobId !== job.id,
+        ),
       );
     },
     [getJobById],

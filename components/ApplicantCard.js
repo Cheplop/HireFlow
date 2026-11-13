@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { ChevronRight } from "lucide-react-native";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Image, Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import theme from "../styles/theme";
 import StatusCard from "./StatusCard";
 
@@ -28,12 +28,13 @@ export default function ApplicantCard({ applicant, jobId, status }) {
         <Text style={styles.cardSubtitle} numberOfLines={1}>
           {applicant.experience}
         </Text>
-        <Text style={styles.statusLabel}>Application status: {status}</Text>
+        <View style={styles.statusWrapper}>
+          <StatusCard status={status} />
+        </View>
       </View>
 
       <View style={styles.rightSection}>
-        <StatusCard status={status} />
-        <ChevronRight size={18} color={theme.fontColor.secondary} />
+        <ChevronRight size={20} color={theme.fontColor.secondary} />
       </View>
     </TouchableOpacity>
   );
@@ -42,28 +43,44 @@ export default function ApplicantCard({ applicant, jobId, status }) {
 const styles = StyleSheet.create({
   card: {
     width: "100%",
-    minHeight: 100,
     padding: theme.spacing.medium,
     borderRadius: theme.radius.large,
     flexDirection: "row",
     alignItems: "center",
     gap: theme.spacing.medium,
     backgroundColor: theme.colors.cardBackground,
-    boxShadow: theme.boxShadow.default,
+    // Cross-platform shadow (replaces CSS-only boxShadow)
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 3,
+      },
+      default: {
+        boxShadow: theme.boxShadow?.default,
+      },
+    }),
   },
   imageContainer: {
     backgroundColor: theme.colors.cardBackground,
     width: 56,
     height: 56,
     borderRadius: theme.radius.small,
-    boxShadow: theme.boxShadow.default,
     justifyContent: "center",
     alignItems: "center",
     overflow: "hidden",
   },
   image: {
-    width: 56,
-    height: 56,
+    width: "100%",
+    height: "100%",
+  },
+  cardContent: {
+    flex: 1,
+    justifyContent: "center",
   },
   cardTitle: {
     fontSize: theme.fontSize.medium,
@@ -73,20 +90,15 @@ const styles = StyleSheet.create({
   cardSubtitle: {
     fontSize: theme.fontSize.small,
     color: theme.fontColor.secondary,
-    marginTop: 3,
+    marginTop: 2,
   },
-  cardContent: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  statusLabel: {
-    color: theme.fontColor.secondary,
-    fontSize: 11,
-    marginTop: 7,
+  statusWrapper: {
+    marginTop: 8,
+    alignSelf: "flex-start",
   },
   rightSection: {
-    alignItems: "flex-end",
     justifyContent: "center",
-    gap: 6,
+    alignItems: "center",
+    paddingLeft: 4,
   },
 });
