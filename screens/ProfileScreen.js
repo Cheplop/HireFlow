@@ -1,12 +1,18 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Alert, Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as ImagePicker from 'expo-image-picker';
-import { File, Paths } from 'expo-file-system';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useEffect, useState } from "react";
+import { Alert, Platform, StyleSheet } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as ImagePicker from "expo-image-picker";
+import { File, Paths } from "expo-file-system";
+import { router } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import ProfileContent from '../components/profile/ProfileContent';
-import { ProfileEditorModal, ProfilePhotoModal } from '../components/profile/ProfileModals';
+import ProfileContent from "../components/profile/ProfileContent";
+import ProfileMenu from "../components/profile/ProfileMenu";
+import {
+  ProfileEditorModal,
+  ProfilePhotoModal,
+} from "../components/profile/ProfileModals";
+import { useAuth } from "../contexts/AuthContext";
 import {
   FORMS,
   initialAbout,
@@ -17,26 +23,218 @@ import {
   makeId,
   PHOTO_STORAGE_KEY,
   sections,
-} from './ProfileScreen.data';
-import { styles } from './ProfileScreen.styles';
+} from "../data/ProfileScreen.data";
+import theme from "../styles/theme";
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+    paddingHorizontal: 22,
+  },
+  scrollContent: {
+    paddingBottom: 105,
+  },
+  profileActions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: 6,
+    marginTop: 10,
+  },
+  sectionContent: {
+    gap: theme.spacing.small,
+  },
+  groupTitle: {
+    color: theme.fontColor.primary,
+    fontSize: theme.fontSize.medium,
+    fontWeight: theme.fontWeight.semibold,
+    marginBottom: 7,
+  },
+  emptyText: {
+    color: theme.fontColor.secondary,
+    fontSize: theme.fontSize.small,
+    paddingVertical: theme.spacing.large,
+    textAlign: "center",
+  },
+  aboutCard: {
+    gap: theme.spacing.small,
+    padding: theme.spacing.medium,
+    borderRadius: theme.radius.medium,
+    backgroundColor: theme.colors.cardBackground,
+    shadowColor: theme.colors.shadow,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  aboutTitle: {
+    color: theme.fontColor.primary,
+    fontSize: theme.fontSize.medium,
+    fontWeight: theme.fontWeight.bold,
+    marginTop: 3,
+  },
+  aboutText: {
+    color: theme.fontColor.secondary,
+    fontSize: theme.fontSize.small,
+    lineHeight: 19,
+  },
+  skills: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 7,
+  },
+  skillChip: {
+    color: theme.actions.editPrimary,
+    fontSize: theme.fontSize.xsmall,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: theme.radius.large,
+    backgroundColor: theme.actions.editBg,
+  },
+  actionRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 10,
+  },
+  actionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: theme.radius.large,
+    backgroundColor: theme.actions.editBg,
+  },
+  actionText: {
+    color: theme.colors.primary,
+    fontSize: theme.fontSize.xsmall,
+    fontWeight: theme.fontWeight.semibold,
+  },
+  deleteButton: {
+    backgroundColor: theme.actions.deleteBg,
+  },
+  deleteText: {
+    color: theme.actions.deletePrimary,
+  },
+  modalBackdrop: {
+    flex: 1,
+    justifyContent: "flex-end",
+    backgroundColor: theme.colors.overlaySubtle,
+  },
+  modalSheet: {
+    maxHeight: "88%",
+    paddingTop: theme.spacing.medium,
+    borderTopLeftRadius: theme.radius.medium,
+    borderTopRightRadius: theme.radius.medium,
+    backgroundColor: theme.colors.background,
+  },
+  photoSheet: {
+    gap: 8,
+    paddingHorizontal: 22,
+    paddingBottom: theme.spacing.large,
+  },
+  photoOption: {
+    minHeight: 44,
+  },
+  removeOption: {
+    backgroundColor: theme.actions.deleteBg,
+    borderColor: theme.actions.deleteBg,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 22,
+    paddingBottom: theme.spacing.small,
+  },
+  modalTitle: {
+    color: theme.fontColor.primary,
+    fontSize: theme.fontSize.medium,
+    fontWeight: theme.fontWeight.bold,
+    textTransform: "capitalize",
+  },
+  modalBody: {
+    gap: theme.spacing.small,
+    paddingHorizontal: 22,
+    paddingVertical: theme.spacing.small,
+  },
+  fieldLabel: {
+    color: theme.fontColor.secondary,
+    fontSize: theme.fontSize.xsmall,
+    fontWeight: theme.fontWeight.semibold,
+    marginBottom: 5,
+  },
+  sectionTab: {
+    minHeight: 34,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 13,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.large,
+    backgroundColor: theme.colors.cardBackground,
+  },
+  selectedSectionTab: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
+  },
+  sectionTabText: {
+    color: theme.fontColor.secondary,
+    fontSize: theme.fontSize.xsmall,
+    fontWeight: theme.fontWeight.semibold,
+  },
+  selectedSectionTabText: {
+    color: theme.fontColor.dark,
+  },
+  input: {
+    minHeight: 44,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: theme.radius.medium,
+    backgroundColor: theme.colors.cardBackground,
+    color: theme.fontColor.primary,
+    fontSize: theme.fontSize.small,
+  },
+  inputMultiline: {
+    minHeight: 96,
+    textAlignVertical: "top",
+  },
+  errorText: {
+    color: theme.actions.deletePrimary,
+    fontSize: theme.fontSize.xsmall,
+  },
+  modalFooter: {
+    flexDirection: "row",
+    gap: 8,
+    paddingHorizontal: 22,
+    paddingTop: theme.spacing.small,
+    paddingBottom: theme.spacing.large,
+  },
+  footerButton: {
+    flex: 1,
+    minHeight: 44,
+  },
+});
 
 export default function ProfileScreen() {
-  const [activeSection, setActiveSection] = useState('Education');
-  const [search, setSearch] = useState('');
+  const { setUser } = useAuth();
+  const [activeSection, setActiveSection] = useState("Education");
   const [isEditing, setIsEditing] = useState(false);
-  const query = search.trim().toLowerCase();
-
+  const [isMenuVisible, setIsMenuVisible] = useState(false);
   const [profile, setProfile] = useState(initialProfile);
   const [education, setEducation] = useState(initialEducation);
   const [experience, setExperience] = useState(initialExperience);
   const [certificates, setCertificates] = useState(initialCertificates);
   const [about, setAbout] = useState(initialAbout);
-
-  // Photos: local image URIs (null = show the default placeholder)
   const [avatarUri, setAvatarUri] = useState(null);
   const [coverUri, setCoverUri] = useState(null);
-  const [photoTarget, setPhotoTarget] = useState(null); // 'avatar' | 'cover' | null
-  const [photosReady, setPhotosReady] = useState(false);
+  const [photoTarget, setPhotoTarget] = useState(null);
+  const [editor, setEditor] = useState(null);
+  const [form, setForm] = useState({});
+  const [error, setError] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -48,18 +246,16 @@ export default function ProfileScreen() {
 
         const photos = JSON.parse(savedPhotos);
         if (isMounted) {
-          setAvatarUri(typeof photos.avatarUri === 'string' ? photos.avatarUri : null);
-          setCoverUri(typeof photos.coverUri === 'string' ? photos.coverUri : null);
+          setAvatarUri(typeof photos.avatarUri === "string" ? photos.avatarUri : null);
+          setCoverUri(typeof photos.coverUri === "string" ? photos.coverUri : null);
         }
       } catch (loadError) {
         if (isMounted) {
           Alert.alert(
-            'Could not load photos',
-            loadError instanceof Error ? loadError.message : 'Please try again.'
+            "Could not load photos",
+            loadError instanceof Error ? loadError.message : "Please try again."
           );
         }
-      } finally {
-        if (isMounted) setPhotosReady(true);
       }
     };
 
@@ -69,131 +265,100 @@ export default function ProfileScreen() {
     };
   }, []);
 
-  // editor = { type: 'profile' | 'education' | ..., id: string | null }
-  const [editor, setEditor] = useState(null);
-  const [form, setForm] = useState({});
-  const [error, setError] = useState('');
-
-  const filteredEducation = useMemo(
-    () => education.filter((item) =>
-      `${item.group} ${item.title} ${item.subtitle}`.toLowerCase().includes(query)
-    ),
-    [education, query]
-  );
-  const filteredExperience = useMemo(
-    () => experience.filter((item) =>
-      `${item.title} ${item.subtitle} ${item.description}`.toLowerCase().includes(query)
-    ),
-    [experience, query]
-  );
-  const filteredCertificates = useMemo(
-    () => certificates.filter((item) =>
-      `${item.title} ${item.subtitle}`.toLowerCase().includes(query)
-    ),
-    [certificates, query]
-  );
-
-  const lists = {
-    education: [education, setEducation],
-    experience: [experience, setExperience],
-    certificates: [certificates, setCertificates],
-  };
-
-  // ---------- Editor helpers ----------
   const openEditor = (type, item = null) => {
     let values = {};
 
-    if (type === 'profile') {
+    if (type === "profile") {
       values = { ...profile };
-    } else if (type === 'about') {
+    } else if (type === "about") {
       values = {
         text: about.text,
-        skills: about.skills.join(', '),
+        skills: about.skills.join(", "),
         availability: about.availability,
       };
-    } else if (type === 'experience') {
+    } else if (type === "experience") {
       values = item
         ? {
             title: item.title,
             subtitle: item.subtitle,
             date: item.date,
-            location: item.details?.[0] ?? '',
-            type: item.details?.[1] ?? '',
-            description: item.description ?? '',
+            location: item.details?.[0] ?? "",
+            type: item.details?.[1] ?? "",
+            description: item.description ?? "",
           }
         : {};
-    } else if (type === 'education') {
-      values = item ? { ...item } : { group: 'Tertiary' };
+    } else if (type === "education") {
+      values = item ? { ...item } : { group: "Tertiary" };
     } else {
       values = item ? { ...item } : {};
     }
 
     setForm(values);
-    setError('');
+    setError("");
     setEditor({ type, id: item?.id ?? null });
   };
 
   const closeEditor = () => {
     setEditor(null);
     setForm({});
-    setError('');
+    setError("");
   };
 
   const saveEditor = () => {
     const config = FORMS[editor.type];
-    const missing = config.fields.find((f) => f.required && !form[f.key]?.trim());
-
+    const missing = config.fields.find((field) => field.required && !form[field.key]?.trim());
     if (missing) {
       setError(`${missing.label} is required.`);
       return;
     }
 
-    const clean = (key) => (form[key] ?? '').trim();
-
-    if (editor.type === 'profile') {
-      setProfile({ name: clean('name'), location: clean('location') });
-    } else if (editor.type === 'about') {
+    const clean = (key) => (form[key] ?? "").trim();
+    if (editor.type === "profile") {
+      setProfile({ name: clean("name"), location: clean("location") });
+    } else if (editor.type === "about") {
       setAbout({
-        text: clean('text'),
-        skills: clean('skills')
-          .split(',')
-          .map((skill) => skill.trim())
-          .filter(Boolean),
-        availability: clean('availability'),
+        text: clean("text"),
+        skills: clean("skills").split(",").map((skill) => skill.trim()).filter(Boolean),
+        availability: clean("availability"),
       });
     } else {
-      const [, setList] = lists[editor.type];
+      const setters = {
+        education: setEducation,
+        experience: setExperience,
+        certificates: setCertificates,
+      };
+      const setList = setters[editor.type];
       let record;
 
-      if (editor.type === 'experience') {
+      if (editor.type === "experience") {
         record = {
-          title: clean('title'),
-          subtitle: clean('subtitle'),
-          date: clean('date'),
-          details: [clean('location'), clean('type')],
-          description: clean('description'),
+          title: clean("title"),
+          subtitle: clean("subtitle"),
+          date: clean("date"),
+          details: [clean("location"), clean("type")],
+          description: clean("description"),
         };
-      } else if (editor.type === 'education') {
+      } else if (editor.type === "education") {
         record = {
-          group: form.group || 'Other',
-          title: clean('title'),
-          subtitle: clean('subtitle'),
-          date: clean('date'),
+          group: form.group || "Other",
+          title: clean("title"),
+          subtitle: clean("subtitle"),
+          date: clean("date"),
         };
       } else {
         record = {
-          title: clean('title'),
-          subtitle: clean('subtitle'),
-          date: clean('date'),
+          title: clean("title"),
+          subtitle: clean("subtitle"),
+          date: clean("date"),
         };
       }
 
       if (editor.id) {
-        setList((prev) => prev.map((entry) => (
+        setList((previous) => previous.map((entry) => (
           entry.id === editor.id ? { ...entry, ...record } : entry
         )));
       } else {
-        setList((prev) => [...prev, { id: makeId(editor.type), ...record }]);
+        setList((previous) => [...previous, { id: makeId(editor.type), ...record }]);
       }
     }
 
@@ -201,53 +366,49 @@ export default function ProfileScreen() {
   };
 
   const confirmDelete = (type, item) => {
-    Alert.alert(
-      'Delete entry',
-      `Remove "${item.title}" from your profile?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => lists[type][1]((prev) => prev.filter((entry) => entry.id !== item.id)),
-        },
-      ]
-    );
+    const setters = {
+      education: setEducation,
+      experience: setExperience,
+      certificates: setCertificates,
+    };
+    Alert.alert("Delete entry", `Remove "${item.title}" from your profile?`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () => setters[type]((previous) => previous.filter((entry) => entry.id !== item.id)),
+      },
+    ]);
   };
 
   const confirmClearAbout = () => {
-    Alert.alert(
-      'Clear about section',
-      'This removes your about text, skills and availability.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Clear',
-          style: 'destructive',
-          onPress: () => setAbout({ text: '', skills: [], availability: '' }),
-        },
-      ]
-    );
+    Alert.alert("Clear about section", "This removes your about text, skills and availability.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Clear",
+        style: "destructive",
+        onPress: () => setAbout({ text: "", skills: [], availability: "" }),
+      },
+    ]);
   };
 
-  // ---------- Photo helpers ----------
   const pickPhoto = async (target, source) => {
     setPhotoTarget(null);
 
     try {
       const options = {
-        mediaTypes: ['images'],
+        mediaTypes: ["images"],
         allowsEditing: true,
-        aspect: target === 'avatar' ? [1, 1] : [3, 1],
+        aspect: target === "avatar" ? [1, 1] : [3, 1],
         quality: 0.8,
-        base64: Platform.OS === 'web',
+        base64: Platform.OS === "web",
       };
       let result;
 
-      if (source === 'camera') {
+      if (source === "camera") {
         const permission = await ImagePicker.requestCameraPermissionsAsync();
         if (!permission.granted) {
-          Alert.alert('Camera access needed', 'Allow camera access in your settings to take a photo.');
+          Alert.alert("Camera access needed", "Allow camera access in your settings to take a photo.");
           return;
         }
         result = await ImagePicker.launchCameraAsync(options);
@@ -258,27 +419,27 @@ export default function ProfileScreen() {
       if (result.canceled) return;
       const asset = result.assets?.[0];
       if (!asset?.uri) {
-        throw new Error('The selected photo is unavailable. Please try another photo.');
+        throw new Error("The selected photo is unavailable. Please try another photo.");
       }
 
-      const photoKey = target === 'avatar' ? 'avatarUri' : 'coverUri';
-      const previousUri = target === 'avatar' ? avatarUri : coverUri;
+      const photoKey = target === "avatar" ? "avatarUri" : "coverUri";
+      const previousUri = target === "avatar" ? avatarUri : coverUri;
       let uri;
       let copiedFile;
 
-      if (Platform.OS === 'web') {
+      if (Platform.OS === "web") {
         if (!asset.base64) {
-          throw new Error('The selected photo could not be saved. Please try another photo.');
+          throw new Error("The selected photo could not be saved. Please try another photo.");
         }
-        uri = `data:${asset.mimeType || 'image/jpeg'};base64,${asset.base64}`;
+        uri = `data:${asset.mimeType || "image/jpeg"};base64,${asset.base64}`;
       } else {
         const sourceFile = new File(asset.uri);
         if (!sourceFile.exists) {
-          throw new Error('The selected photo is no longer available. Please try again.');
+          throw new Error("The selected photo is no longer available. Please try again.");
         }
         copiedFile = new File(
           Paths.document,
-          `hireflow-${target}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}${sourceFile.extension || '.jpg'}`
+          `hireflow-${target}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}${sourceFile.extension || ".jpg"}`
         );
         await sourceFile.copy(copiedFile);
         uri = copiedFile.uri;
@@ -291,60 +452,58 @@ export default function ProfileScreen() {
         try {
           if (copiedFile?.exists) copiedFile.delete();
         } catch (cleanupError) {
-          console.error('Could not clean up an unsaved profile photo.', cleanupError);
+          console.error("Could not clean up an unsaved profile photo.", cleanupError);
         }
         throw saveError;
       }
 
-      if (target === 'avatar') setAvatarUri(uri);
+      if (target === "avatar") setAvatarUri(uri);
       else setCoverUri(uri);
 
-      if (previousUri && previousUri !== uri && Platform.OS !== 'web') {
+      if (previousUri && previousUri !== uri && Platform.OS !== "web") {
         try {
           const previousFile = new File(previousUri);
           if (previousFile.exists) previousFile.delete();
         } catch (cleanupError) {
-          console.error('Could not remove the previous profile photo.', cleanupError);
+          console.error("Could not remove the previous profile photo.", cleanupError);
         }
       }
     } catch (pickError) {
       Alert.alert(
-        'Could not load photo',
-        pickError instanceof Error ? pickError.message : 'Something went wrong. Please try again.'
+        "Could not load photo",
+        pickError instanceof Error ? pickError.message : "Something went wrong. Please try again."
       );
     }
   };
 
   const removePhoto = async (target) => {
-    const photoKey = target === 'avatar' ? 'avatarUri' : 'coverUri';
-    const previousUri = target === 'avatar' ? avatarUri : coverUri;
+    const photoKey = target === "avatar" ? "avatarUri" : "coverUri";
+    const previousUri = target === "avatar" ? avatarUri : coverUri;
     const nextPhotos = { avatarUri, coverUri, [photoKey]: null };
 
     try {
       await AsyncStorage.setItem(PHOTO_STORAGE_KEY, JSON.stringify(nextPhotos));
     } catch (removeError) {
       Alert.alert(
-        'Could not remove photo',
-        removeError instanceof Error ? removeError.message : 'Please try again.'
+        "Could not remove photo",
+        removeError instanceof Error ? removeError.message : "Please try again."
       );
       return;
     }
 
-    if (target === 'avatar') setAvatarUri(null);
+    if (target === "avatar") setAvatarUri(null);
     else setCoverUri(null);
     setPhotoTarget(null);
 
-    if (previousUri && Platform.OS !== 'web') {
+    if (previousUri && Platform.OS !== "web") {
       try {
         const previousFile = new File(previousUri);
         if (previousFile.exists) previousFile.delete();
       } catch (cleanupError) {
-        console.error('Could not remove the profile photo file.', cleanupError);
+        console.error("Could not remove the profile photo file.", cleanupError);
       }
     }
   };
-
-  const hasPhoto = photoTarget === 'avatar' ? !!avatarUri : !!coverUri;
 
   const editorConfig = editor ? FORMS[editor.type] : null;
 
@@ -354,21 +513,22 @@ export default function ProfileScreen() {
         profile={profile}
         coverUri={coverUri}
         avatarUri={avatarUri}
-        photosReady={photosReady}
         isEditing={isEditing}
         onPhotoTarget={setPhotoTarget}
+        onMenuPress={() => setIsMenuVisible(true)}
         onToggleEditing={() => setIsEditing((value) => !value)}
-        onEditProfile={() => openEditor('profile')}
+        onEditProfile={() => openEditor("profile")}
         sections={sections}
         activeSection={activeSection}
         onSelectSection={setActiveSection}
-        filteredEducation={filteredEducation}
+        filteredEducation={education}
         educationEmpty={education.length === 0}
-        filteredExperience={filteredExperience}
+        filteredExperience={experience}
         experienceEmpty={experience.length === 0}
-        filteredCertificates={filteredCertificates}
+        filteredCertificates={certificates}
         certificatesEmpty={certificates.length === 0}
         about={about}
+        styles={styles}
         onAdd={(type) => openEditor(type)}
         onEdit={(type, item) => openEditor(type, item)}
         onDelete={confirmDelete}
@@ -381,15 +541,26 @@ export default function ProfileScreen() {
         setForm={setForm}
         error={error}
         setError={setError}
+        styles={styles}
         onClose={closeEditor}
         onSave={saveEditor}
       />
       <ProfilePhotoModal
         photoTarget={photoTarget}
-        hasPhoto={hasPhoto}
+        hasPhoto={photoTarget === "avatar" ? !!avatarUri : !!coverUri}
+        styles={styles}
         onPickPhoto={pickPhoto}
         onRemovePhoto={removePhoto}
         onClose={() => setPhotoTarget(null)}
+      />
+      <ProfileMenu
+        visible={isMenuVisible}
+        onClose={() => setIsMenuVisible(false)}
+        onNotifications={() => Alert.alert("Notifications", "Notifications are not available yet.")}
+        onLogout={() => {
+          setUser(null);
+          router.replace("/");
+        }}
       />
     </SafeAreaView>
   );
