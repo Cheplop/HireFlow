@@ -1,62 +1,68 @@
-import { Pressable, Text, View } from 'react-native';
-import { Briefcase, MapPin, Pencil, Plus, Trash2 } from 'lucide-react-native';
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
-import theme from '../../styles/theme';
-import { DANGER, styles } from '../../screens/ProfileScreen.styles';
+import { Ionicons } from "@expo/vector-icons";
+import theme from "../../styles/theme";
 
-export function ProfileEntryCard({
+export default function EntryCard({
   item,
-  icon: Icon,
-  showDetails = false,
-  editing = false,
+  isEditing,
   onEdit,
   onDelete,
 }) {
   return (
-    <View style={styles.entryCard}>
-      <View style={styles.entryIcon}>
-        <Icon size={19} color={theme.colors.primary} />
-      </View>
-      <View style={styles.entryContent}>
-        <View style={styles.entryTitleRow}>
-          <Text style={styles.entryTitle} numberOfLines={1}>{item.title}</Text>
-          {!!item.date && <Text style={styles.entryDate}>{item.date}</Text>}
-        </View>
-        <Text style={styles.entrySubtitle}>{item.subtitle}</Text>
-        {showDetails && item.details?.map((detail, index) => (
-          !!detail && (
-            <View key={`${detail}-${index}`} style={styles.detailRow}>
-              {index === 0
-                ? <MapPin size={14} color={theme.fontColor.primary} />
-                : <Briefcase size={14} color={theme.fontColor.primary} />}
-              <Text style={styles.detailText}>{detail}</Text>
-            </View>
-          )
-        ))}
-        {showDetails && !!item.description && (
-          <Text style={styles.entryDescription} numberOfLines={3}>
-            {item.description}
+    <View style={styles.card}>
+      <View style={styles.thumb} />
+
+      <View style={styles.body}>
+        <View style={styles.titleRow}>
+          <Text style={styles.title} numberOfLines={1}>
+            {item.title}
           </Text>
-        )}
-        {editing && (
-          <View style={styles.actionRow}>
+
+          <Text style={styles.date}>
+            {item.date}
+          </Text>
+        </View>
+
+        <Text style={styles.subtitle}>
+          {item.subtitle}
+        </Text>
+
+        {isEditing && (
+          <View style={styles.actions}>
             <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`Edit ${item.title}`}
+              style={styles.btn}
               onPress={onEdit}
-              style={styles.actionButton}
             >
-              <Pencil size={13} color={theme.colors.primary} />
-              <Text style={styles.actionText}>Edit</Text>
+              <Ionicons
+                name="create-outline"
+                size={13}
+                color={theme.actions.editPrimary}
+              />
+
+              <Text style={styles.btnText}>
+                Edit
+              </Text>
             </Pressable>
+
             <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`Delete ${item.title}`}
+              style={[styles.btn, styles.del]}
               onPress={onDelete}
-              style={[styles.actionButton, styles.deleteButton]}
             >
-              <Trash2 size={13} color={DANGER} />
-              <Text style={[styles.actionText, styles.deleteText]}>Delete</Text>
+              <Ionicons
+                name="trash-outline"
+                size={13}
+                color={theme.actions.deletePrimary}
+              />
+
+              <Text style={[styles.btnText, styles.deleteText]}>
+                Delete
+              </Text>
             </Pressable>
           </View>
         )}
@@ -65,25 +71,83 @@ export function ProfileEntryCard({
   );
 }
 
-export function AddButton({ label, onPress }) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      style={[styles.sectionTab, styles.selectedSectionTab, styles.addButton]}
-    >
-      <Plus size={14} color="#FFFFFF" />
-      <Text style={[styles.sectionTabText, styles.selectedSectionTabText]}>{label}</Text>
-    </Pressable>
-  );
-}
+const styles = StyleSheet.create({
+  card: {
+    flexDirection: "row",
+    gap: 10,
+    padding: 11,
+    borderRadius: 14,
+    backgroundColor: theme.colors.cardBackground,
+    shadowColor: theme.colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
+  },
 
-export function EmptyResults({ empty = false }) {
-  return (
-    <Text style={styles.emptyText}>
-      {empty
-        ? 'Nothing here yet. Tap Edit profile to add an entry.'
-        : 'No profile information matches your search.'}
-    </Text>
-  );
-}
+  thumb: {
+    width: 34,
+    height: 34,
+    borderRadius: 4,
+    backgroundColor: theme.colors.coverBackground,
+  },
+
+  body: {
+    flex: 1,
+    minWidth: 0,
+  },
+
+  titleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 6,
+  },
+
+  title: {
+    flex: 1,
+    color: theme.fontColor.primary,
+    fontSize: theme.fontSize.medium,
+    fontWeight: theme.fontWeight.bold,
+  },
+
+  date: {
+    color: theme.fontColor.secondary,
+    fontSize: theme.fontSize.small,
+  },
+
+  subtitle: {
+    color: theme.fontColor.secondary,
+    fontSize: theme.fontSize.small,
+    marginTop: 3,
+  },
+
+  actions: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 10,
+  },
+
+  btn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: theme.radius.large,
+    backgroundColor: theme.actions.editBg,
+  },
+
+  del: {
+    backgroundColor: theme.actions.deleteBg,
+  },
+
+  btnText: {
+    color: theme.actions.editPrimary,
+    fontSize: theme.fontSize.small,
+    fontWeight: theme.fontWeight.semibold,
+  },
+
+  deleteText: {
+    color: theme.actions.deletePrimary,
+  },
+});
