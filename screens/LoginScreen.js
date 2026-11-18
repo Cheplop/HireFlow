@@ -20,26 +20,30 @@ export default function LoginScreen() {
     );
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState ("");
+  const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-
+  }
 
   const handleLogin = () => {
     const account = users[email.toLowerCase()];
 
-    if (!email || !password) {
+  const handleLogin = async () => {
+    if (!email.trim() || !password) {
       setError("Wakay gi input dol!");
       return;
     }
 
-    if (!account || password !== "1234") {
+    setIsSubmitting(true);
+    const result = await login(email, password);
+    setIsSubmitting(false);
+
+    if (!result.ok) {
       setError("PUK manka dol");
       return;
     }
 
+    // Success: PublicOnly (app/index.js) redirects to the tabs once the user is set.
     setError("");
-    setUser(account);
-    router.push("/(tabs)");
   };
 
   return (
@@ -61,13 +65,12 @@ export default function LoginScreen() {
         </View>
 
         <AuthInput
-          label="Email"
-          placeholder="name@example.com"
-          keyboardType="email-address"
+          label="Username or email"
+          placeholder="Username or name@example.com"
           autoCapitalize="none"
           value={email}
-          onChangeText={setEmail} // Fixed the stray 'z' here
-          icon={<User size={20} />} // Pass your icon component here
+          onChangeText={setEmail}
+          icon={<User size={20} />}
         />
 
         <AuthInput
@@ -89,8 +92,9 @@ export default function LoginScreen() {
         />
 
         <PrimaryButton
-          title="Log in"
+          title={isSubmitting ? "Logging in..." : "Log in"}
           onPress={handleLogin}
+          disabled={isSubmitting}
         />
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
