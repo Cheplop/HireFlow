@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import EntryCard from "./EntryCard";
@@ -20,7 +20,7 @@ export default function ProfileContent(props) {
 
   const AddButton = ({ type, label }) =>
     isEditing ? (
-      <Pressable style={[styles.actionButton, { alignSelf: "flex-start" }]} onPress={() => onAdd(type)}>
+      <Pressable style={[styles.actionButton, { alignSelf: "flex-start", marginBottom: 12 }]} onPress={() => onAdd(type)}>
         <Ionicons name="add" size={14} color={theme.actions.editPrimary} />
         <Text style={styles.actionText}>{label}</Text>
       </Pressable>
@@ -41,8 +41,12 @@ export default function ProfileContent(props) {
           const items = filteredEducation.filter((e) => e.group === group);
           if (!items.length) return null;
           return (
-            <View key={group}>
-              <Text style={styles.groupTitle}>{group}</Text>
+            <View key={group} style={localStyles.groupContainer}>
+              {/* Muted header with lines extending after each */}
+              <View style={localStyles.groupHeaderContainer}>
+                <Text style={localStyles.groupTitle}>{group}</Text>
+                <View style={localStyles.groupLine} />
+              </View>
               <View style={styles.sectionContent}>
                 {items.map((item) => (
                   <EntryCard
@@ -154,3 +158,26 @@ export default function ProfileContent(props) {
     </ScrollView>
   );
 }
+
+const localStyles = StyleSheet.create({
+  groupContainer: {
+    marginBottom: theme.spacing.small,
+  },
+  groupHeaderContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: theme.spacing.small,
+    marginTop: 4,
+  },
+  groupTitle: {
+    fontSize: theme.fontSize.small,
+    fontWeight: theme.fontWeight.semibold,
+    color: theme.fontColor.secondary, // Uses "#888888" from your theme
+    marginRight: theme.spacing.small,
+  },
+  groupLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: theme.fontColor.secondary, // Uses "#E5E7EB" from your theme
+  },
+});
