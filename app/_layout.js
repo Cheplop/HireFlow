@@ -12,6 +12,7 @@ export default function RootLayout() {
           <ApplicantsProvider>
             <Stack>
               <Stack.Screen name="index" options={{ headerShown: false }} />
+              <Stack.Screen name="login" options={{ headerShown: false }} />
               <Stack.Screen
                 name="registration"
                 options={{ headerShown: false, animation: "simple_push" }}

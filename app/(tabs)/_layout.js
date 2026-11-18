@@ -2,13 +2,15 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { Tabs } from "expo-router";
 import { StyleSheet } from "react-native";
 import { useAuth } from "../../contexts/AuthContext";
+import RequireAuth from "../../components/RequireAuth";
 
 export default function TabLayout() {
   const { user } = useAuth();
   const isEmployer = user?.role === "employer";
 
   return (
-    <Tabs
+     <RequireAuth>
+      <Tabs
       screenOptions={{
         tabBarStyle: styles.tabBar,
         tabBarActiveTintColor: "#4B5694",
@@ -92,7 +94,9 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
+     </RequireAuth>
   );
+    
 }
 
 const styles = StyleSheet.create({

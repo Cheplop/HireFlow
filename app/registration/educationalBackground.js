@@ -12,6 +12,8 @@ import { router } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
 
 import { PrimaryButton } from "@/components/common/PrimaryButton";
+import { useAuth } from "../../contexts/AuthContext";
+import { saveProfileData } from "../../data/profileStorage";
 
 const SECTIONS = [
   {
@@ -36,6 +38,7 @@ const SECTIONS = [
 ];
 
 export default function EducationalBackgroundScreen() {
+  const { user } = useAuth();
   const [values, setValues] = useState({
     tertiaryInstitution: "",
     tertiaryDegree: "",
@@ -43,8 +46,24 @@ export default function EducationalBackgroundScreen() {
     elementary: "",
   });
 
-
   const setField = (key, text) => setValues((prev) => ({ ...prev, [key]: text }));
+
+  // Saves what was typed to this account's profile, then moves on.
+  const handleNext = async () => {
+    const entries = [];
+    const add = (id, group, title, subtitle) => {
+      if (title.trim()) {
+        entries.push({ id, group, title: title.trim(), subtitle, date: "" });
+      }
+    };
+
+    add("edu-tertiary", "Tertiary", values.tertiaryInstitution, values.tertiaryDegree.trim());
+    add("edu-secondary", "Secondary", values.highSchool, "High School");
+    add("edu-primary", "Primary", values.elementary, "Elementary Education");
+
+    await saveProfileData(user?.id, { education: entries });
+    router.replace("/registration/workExperience");
+  };
 
   return (
     <KeyboardAvoidingView
@@ -94,7 +113,7 @@ export default function EducationalBackgroundScreen() {
           <PrimaryButton
             title="NEXT"
             style={styles.nextButton}
-            onPress={() => router.replace("/registration/workExperience")}
+            onPress={handleNext}
           />
         </View>
       </ScrollView>
@@ -173,4 +192,3 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
 });
-
