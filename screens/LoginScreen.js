@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Image, ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
-import { router, Link } from "expo-router";
+import { Link } from "expo-router";
 import { User, KeyRound, Eye, EyeOff } from "lucide-react-native";
 import theme from "../styles/theme";
 
@@ -12,30 +12,31 @@ export default function LoginScreen() {
   const { setUser } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState ("");
+  const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
 
-  const handleLogin = () => {
-    const accounts = {
-      remiel: { id: "remiel", username: "remiel", role: "employee" },
-      bill: { id: "bill", username: "Bill", role: "employer" },
-    };
-    const account = accounts[email.toLowerCase()];
+  const { login } = useAuth();
+  // ...your existing useState lines stay...
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-    if (!email || !password) {
+  const handleLogin = async () => {
+    if (!email.trim() || !password) {
       setError("Wakay gi input dol!");
       return;
     }
 
-    if (!account || password !== "1234") {
+    setIsSubmitting(true);
+    const result = await login(email, password);
+    setIsSubmitting(false);
+
+    if (!result.ok) {
       setError("PUK manka dol");
       return;
     }
 
+    // Success: PublicOnly (app/index.js) redirects to the tabs once the user is set.
     setError("");
-    setUser(account);
-    router.push("/(tabs)");
   };
 
   return (
@@ -57,13 +58,12 @@ export default function LoginScreen() {
         </View>
 
         <AuthInput
-          label="Email"
-          placeholder="name@example.com"
-          keyboardType="email-address"
+          label="Username or email"
+          placeholder="Username or name@example.com"
           autoCapitalize="none"
           value={email}
-          onChangeText={setEmail} // Fixed the stray 'z' here
-          icon={<User size={20} />} // Pass your icon component here
+          onChangeText={setEmail}
+          icon={<User size={20} />}
         />
 
         <AuthInput
@@ -85,8 +85,9 @@ export default function LoginScreen() {
         />
 
         <PrimaryButton
-          title="Log in"
+          title={isSubmitting ? "Logging in..." : "Log in"}
           onPress={handleLogin}
+          disabled={isSubmitting}
         />
 
         {error ? <Text style={styles.error}>{error}</Text> : null}

@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Bell, Search } from 'lucide-react-native';
 
+import DashboardSummary from '@/components/DashboardSummary';
 import { ApplyCard } from '@/components/employee/ApplyCard';
 import { AuthInput } from '@/components/common/AuthInput';
 import { PrimaryButton } from '@/components/common/PrimaryButton';
@@ -89,6 +90,7 @@ export default function HomeScreen() {
 
       <FlatList
         data={filteredJobs}
+        ListHeaderComponent={<DashboardSummary />}
         contentContainerStyle={styles.cards}
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (

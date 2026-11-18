@@ -1,9 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Alert, Platform, StyleSheet } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 import { File, Paths } from "expo-file-system";
-import { router } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import ProfileContent from "../components/profile/ProfileContent";
@@ -13,13 +12,9 @@ import {
   ProfilePhotoModal,
 } from "../components/profile/ProfileModals";
 import { useAuth } from "../contexts/AuthContext";
+import { getStarterProfile, loadSavedProfile, saveProfileData } from "../data/profileStorage";
 import {
   FORMS,
-  initialAbout,
-  initialCertificates,
-  initialEducation,
-  initialExperience,
-  initialProfile,
   makeId,
   PHOTO_STORAGE_KEY,
   sections,
@@ -220,28 +215,61 @@ const styles = StyleSheet.create({
 });
 
 export default function ProfileScreen() {
-  const { setUser } = useAuth();
+  const { user, logout } = useAuth();
+  // Each account gets its own starting data and its own photo slot.
+  const starter = useMemo(() => getStarterProfile(user), [user?.id]);
+  const photoStorageKey = `${PHOTO_STORAGE_KEY}:${user?.id ?? "guest"}`;
+
   const [activeSection, setActiveSection] = useState("Education");
   const [isEditing, setIsEditing] = useState(false);
   const [isMenuVisible, setIsMenuVisible] = useState(false);
-  const [profile, setProfile] = useState(initialProfile);
-  const [education, setEducation] = useState(initialEducation);
-  const [experience, setExperience] = useState(initialExperience);
-  const [certificates, setCertificates] = useState(initialCertificates);
-  const [about, setAbout] = useState(initialAbout);
+  const [profile, setProfile] = useState(starter.profile);
+  const [education, setEducation] = useState(starter.education);
+  const [experience, setExperience] = useState(starter.experience);
+  const [certificates, setCertificates] = useState(starter.certificates);
+  const [about, setAbout] = useState(starter.about);
   const [avatarUri, setAvatarUri] = useState(null);
   const [coverUri, setCoverUri] = useState(null);
   const [photoTarget, setPhotoTarget] = useState(null);
   const [editor, setEditor] = useState(null);
   const [form, setForm] = useState({});
   const [error, setError] = useState("");
+  const [profileLoaded, setProfileLoaded] = useState(false);
 
+  // Load what this account saved (including answers from registration).
+  useEffect(() => {
+    if (!user?.id) return;
+    let cancelled = false;
+
+    loadSavedProfile(user.id).then((saved) => {
+      if (cancelled) return;
+      if (saved?.profile) setProfile(saved.profile);
+      if (saved?.education) setEducation(saved.education);
+      if (saved?.experience) setExperience(saved.experience);
+      if (saved?.certificates) setCertificates(saved.certificates);
+      if (saved?.about) setAbout(saved.about);
+      setProfileLoaded(true);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  // Save edits as they happen (only after the saved data has loaded, so we
+  // never overwrite it with the starting values).
+  useEffect(() => {
+    if (!profileLoaded || !user?.id) return;
+    saveProfileData(user.id, { profile, education, experience, certificates, about });
+  }, [profileLoaded, user?.id, profile, education, experience, certificates, about]);
+
+  // Load this account's saved photos.
   useEffect(() => {
     let isMounted = true;
 
     const loadPhotos = async () => {
       try {
-        const savedPhotos = await AsyncStorage.getItem(PHOTO_STORAGE_KEY);
+        const savedPhotos = await AsyncStorage.getItem(photoStorageKey);
         if (!savedPhotos) return;
 
         const photos = JSON.parse(savedPhotos);
@@ -263,7 +291,7 @@ export default function ProfileScreen() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [photoStorageKey]);
 
   const openEditor = (type, item = null) => {
     let values = {};
@@ -279,13 +307,13 @@ export default function ProfileScreen() {
     } else if (type === "experience") {
       values = item
         ? {
-            title: item.title,
-            subtitle: item.subtitle,
-            date: item.date,
-            location: item.details?.[0] ?? "",
-            type: item.details?.[1] ?? "",
-            description: item.description ?? "",
-          }
+          title: item.title,
+          subtitle: item.subtitle,
+          date: item.date,
+          location: item.details?.[0] ?? "",
+          type: item.details?.[1] ?? "",
+          description: item.description ?? "",
+        }
         : {};
     } else if (type === "education") {
       values = item ? { ...item } : { group: "Tertiary" };
@@ -447,7 +475,7 @@ export default function ProfileScreen() {
 
       const nextPhotos = { avatarUri, coverUri, [photoKey]: uri };
       try {
-        await AsyncStorage.setItem(PHOTO_STORAGE_KEY, JSON.stringify(nextPhotos));
+        await AsyncStorage.setItem(photoStorageKey, JSON.stringify(nextPhotos));
       } catch (saveError) {
         try {
           if (copiedFile?.exists) copiedFile.delete();
@@ -482,7 +510,7 @@ export default function ProfileScreen() {
     const nextPhotos = { avatarUri, coverUri, [photoKey]: null };
 
     try {
-      await AsyncStorage.setItem(PHOTO_STORAGE_KEY, JSON.stringify(nextPhotos));
+      await AsyncStorage.setItem(photoStorageKey, JSON.stringify(nextPhotos));
     } catch (removeError) {
       Alert.alert(
         "Could not remove photo",
@@ -558,8 +586,8 @@ export default function ProfileScreen() {
         onClose={() => setIsMenuVisible(false)}
         onNotifications={() => Alert.alert("Notifications", "Notifications are not available yet.")}
         onLogout={() => {
-          setUser(null);
-          router.replace("/");
+          // RequireAuth sends the user to /login once the session is cleared.
+          logout();
         }}
       />
     </SafeAreaView>
