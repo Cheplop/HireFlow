@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Image, ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
-import { router, Link } from "expo-router";
+import { router, Link, useFocusEffect } from "expo-router";
 import { User, KeyRound, Eye, EyeOff } from "lucide-react-native";
 import theme from "../styles/theme";
+import { users } from "../data/users";
+
+
 
 import { AuthInput } from "@/components/common/AuthInput";
 import { PrimaryButton } from "@/components/common/PrimaryButton";
@@ -10,6 +13,11 @@ import { useAuth } from "../contexts/AuthContext";
 
 export default function LoginScreen() {
   const { setUser } = useAuth();
+    useFocusEffect(
+      useCallback(() =>{
+        setUser(null);
+      }, [setUser] )
+    );
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState ("");
@@ -17,11 +25,7 @@ export default function LoginScreen() {
 
 
   const handleLogin = () => {
-    const accounts = {
-      remiel: { id: "remiel", username: "remiel", role: "employee" },
-      bill: { id: "bill", username: "Bill", role: "employer" },
-    };
-    const account = accounts[email.toLowerCase()];
+    const account = users[email.toLowerCase()];
 
     if (!email || !password) {
       setError("Wakay gi input dol!");

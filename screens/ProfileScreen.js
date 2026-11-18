@@ -559,7 +559,7 @@ export default function ProfileScreen() {
         onNotifications={() => Alert.alert("Notifications", "Notifications are not available yet.")}
         onLogout={() => {
           setUser(null);
-          router.replace("/");
+          router.dismissAll("/");
         }}
       />
     </SafeAreaView>

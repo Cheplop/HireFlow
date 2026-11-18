@@ -65,7 +65,7 @@ export default function WorkExperienceScreen() {
           <PrimaryButton
             title="NEXT"
             style={styles.nextButton}
-            onPress={() => router.replace("/")}
+            onPress={() => router.dismissAll("/")}
           />
         </View>
       </ScrollView>
