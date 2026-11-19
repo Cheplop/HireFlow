@@ -1,6 +1,3 @@
-
--rich mhyc
-
 # HireFlow
 
 HireFlow is a mobile employment app built with React Native and Expo. It provides account setup screens and a job-browsing experience with sample listings and job details.
