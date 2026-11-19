@@ -15,7 +15,7 @@ const workModes = ['On-site', 'Remote', 'Hybrid'];
 
 export default function Posts() {
     const { user } = useAuth();
-    const { createJob, updateJob, deleteJob, getJobsForEmployer } = useJobs();
+    const { createJob, updateJob, deleteJob, getJobsForEmployer, toggleJobAvailability } = useJobs();
     const { deleteApplicationsForJob } = useApplications();
     const employerJobs = getJobsForEmployer(user.id);
 
@@ -109,6 +109,14 @@ export default function Posts() {
         }
     }
 
+    function handleToggleAvailability(job){
+        try{
+            toggleJobAvailability(job.id, user.id);
+        } catch (toggleError){
+            setError(toggleError.message);
+        }
+    }
+
     function renderJob({ item }) {
         return (
             <View style={styles.postCard}>
@@ -123,6 +131,14 @@ export default function Posts() {
                         <Text style={styles.postPrice}>
                             ₱{Number(item.salary || 0).toLocaleString()}
                         </Text>
+                        <Text
+                         style={[
+                            styles.statusBadge,
+                            item.isPublished ? styles.statusOPen : styles.statusClosed,
+                         ]}   
+                        >
+                            {item.isPublished ? 'Open' : 'Closed'}
+                        </Text>
                     </View>
                 </View>
 
@@ -133,6 +149,15 @@ export default function Posts() {
                             variant="secondary"
                             onPress={() => startEditing(item)}
                         />
+                    </View>
+
+                    <View style ={styles.actionButton}>
+                         <PrimaryButton
+                            title={item.isPublished ? 'Close' : 'Reopen'}
+                            variant="secondary"
+                            onPress={() => handleToggleAvailability(item)}
+                         />
+
                     </View>
 
                     <View style={styles.actionButton}>
@@ -490,5 +515,24 @@ const styles = StyleSheet.create({
     loading: {
         padding: 20,
         color: '#252A40',
+    },
+    statusBadge: {
+        alignSelf: 'flex-start',
+        fontSize: 11,
+        fontWeight: '700',
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 8,
+        overflow: 'hidden'
+    },
+    
+    statusOpen:{
+        backgroundColor: '#E3F5EA',
+        color: "#1E7B3A"
+    },
+
+    statusClosed: {
+        backgroundColor: '#FDE8E8',
+        color:'#B42318'
     },
 });

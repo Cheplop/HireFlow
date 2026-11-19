@@ -586,8 +586,8 @@ export default function ProfileScreen() {
         onClose={() => setIsMenuVisible(false)}
         onNotifications={() => Alert.alert("Notifications", "Notifications are not available yet.")}
         onLogout={() => {
-          // RequireAuth sends the user to /login once the session is cleared.
-          logout();
+          setUser(null);
+          router.dismissAll("/");
         }}
       />
     </SafeAreaView>

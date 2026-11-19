@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Image, ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
-import { Link } from "expo-router";
+import { router, Link, useFocusEffect } from "expo-router";
 import { User, KeyRound, Eye, EyeOff } from "lucide-react-native";
 import theme from "../styles/theme";
+import { users } from "../data/users";
+
+
 
 import { AuthInput } from "@/components/common/AuthInput";
 import { PrimaryButton } from "@/components/common/PrimaryButton";
@@ -10,15 +13,19 @@ import { useAuth } from "../contexts/AuthContext";
 
 export default function LoginScreen() {
   const { setUser } = useAuth();
+    useFocusEffect(
+      useCallback(() =>{
+        setUser(null);
+      }, [setUser] )
+    );
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  }
 
-
-  const { login } = useAuth();
-  // ...your existing useState lines stay...
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const handleLogin = () => {
+    const account = users[email.toLowerCase()];
 
   const handleLogin = async () => {
     if (!email.trim() || !password) {
