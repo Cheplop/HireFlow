@@ -1,4 +1,17 @@
-export const users = {
-      remiel: { id: "remiel", username: "remiel", role: "employee" },
-      bill: { id: "bill", username: "Bill", role: "employer" },
-    };
+
+export const DEMO_ACCOUNTS = [
+  {
+    id: "remiel",
+    username: "remiel",
+    email: "remiel@hireflow.demo",
+    password: "1234",
+    role: "employee",
+  },
+  {
+    id: "bill",
+    username: "Bill",
+    email: "bill@hireflow.demo",
+    password: "1234",
+    role: "employer",
+  },
+];
