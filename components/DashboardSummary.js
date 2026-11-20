@@ -64,13 +64,6 @@ export default function DashboardSummary() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.greetingRow}>
-        <Text style={styles.greeting} numberOfLines={1}>
-          Hi, {user.username}
-        </Text>
-        <RoleBadge role={user.role} />
-      </View>
-
       <View style={styles.tiles}>
         {tiles.map((tile) => (
           <StatTile key={tile.label} {...tile} />
@@ -85,11 +78,7 @@ const styles = StyleSheet.create({
     gap: theme.spacing.small + 4,
     marginBottom: theme.spacing.small,
   },
-  greetingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: theme.spacing.small,
-  },
+
   greeting: {
     flexShrink: 1,
     color: theme.fontColor.primary,

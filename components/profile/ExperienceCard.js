@@ -1,5 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import ProfileLogo from "./ProfileLogo";
+import { getOrganizationLogo } from "../../data/companyLogos";
 import theme from '../../styles/theme';
 
 
@@ -15,13 +17,14 @@ function DetailRow({ icon, text }) {
 }
 
 export default function ExperienceCard({ item, isEditing, onEdit, onDelete }) {
-  const { title, date, subtitle, description, details = [] } = item;
+  const { title, date, subtitle, description, details = [], logo } = item;
   const [location, type] = details;
+  const companyLogo = logo || getOrganizationLogo(subtitle);
 
   return (
     <View style={styles.card}>
       <View style={styles.header}>
-        <View style={styles.thumbnail} />
+        <ProfileLogo source={companyLogo} style={styles.thumbnail} />
 
         <View style={styles.headerContent}>
           <View style={styles.titleRow}>
@@ -79,8 +82,6 @@ const styles = StyleSheet.create({
   thumbnail: {
     width: 34,
     height: 34,
-    borderRadius: 4,
-    backgroundColor: theme.colors.border,
   },
   headerContent: {
     flex: 1,
