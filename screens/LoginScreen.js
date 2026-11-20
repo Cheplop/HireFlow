@@ -27,7 +27,7 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email.trim() || !password) {
-      setError("Wakay gi input dol!");
+      setError("Enter your username/email and password.");
       return;
     }
 

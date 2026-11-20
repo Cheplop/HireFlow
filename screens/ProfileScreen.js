@@ -306,7 +306,13 @@ export default function ProfileScreen({
     const loadPhotos = async () => {
       try {
         const savedPhotos = await AsyncStorage.getItem(photoStorageKey);
-        if (!savedPhotos) return;
+        if (!savedPhotos) {
+          if (isMounted) {
+            setAvatarUri(null);
+            setCoverUri(null);
+          }
+          return;
+        }
 
         const photos = JSON.parse(savedPhotos);
         if (isMounted) {
@@ -315,6 +321,8 @@ export default function ProfileScreen({
         }
       } catch (loadError) {
         if (isMounted) {
+          setAvatarUri(null);
+          setCoverUri(null);
           Alert.alert(
             "Could not load photos",
             loadError instanceof Error ? loadError.message : "Please try again."
@@ -477,8 +485,8 @@ export default function ProfileScreen({
 
       const options = {
         mediaTypes: ["images"],
-        allowsEditing: true,
-        aspect: target === "avatar" ? [1, 1] : [3, 1],
+        allowsEditing: target === "avatar",
+        ...(target === "avatar" ? { aspect: [1, 1] } : {}),
         quality: 0.8,
         base64: Platform.OS === "web",
       };
@@ -492,6 +500,19 @@ export default function ProfileScreen({
         }
         result = await ImagePicker.launchCameraAsync(options);
       } else {
+        if (Platform.OS !== "web") {
+          const permission =
+            await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+          if (!permission.granted) {
+            Alert.alert(
+              "Photo library access needed",
+              "Allow photo library access in your settings to choose a photo."
+            );
+            return;
+          }
+        }
+
         result = await ImagePicker.launchImageLibraryAsync(options);
       }
 

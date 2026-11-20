@@ -1,7 +1,6 @@
 import { router } from "expo-router";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
-import RoleBadge from "./common/RoleBadge";
 import StatTile from "./common/StatTile";
 import { useApplications } from "../contexts/ApplicationsContext";
 import { useAuth } from "../contexts/AuthContext";
@@ -77,11 +76,6 @@ const styles = StyleSheet.create({
   container: {
     gap: theme.spacing.small + 4,
     marginBottom: theme.spacing.small,
-  },
-  greetingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: theme.spacing.small,
   },
   tiles: {
     flexDirection: "row",

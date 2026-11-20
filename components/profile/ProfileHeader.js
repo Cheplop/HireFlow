@@ -67,6 +67,9 @@ export default function ProfileHeader({
         <Pressable
           style={styles.avatar}
           onPress={() => isEditing && onPhotoTarget('avatar')}
+          accessibilityRole="button"
+          accessibilityLabel="Edit profile photo"
+          accessibilityState={{ disabled: !isEditing }}
         >
           {avatarUri ? (
             <Image

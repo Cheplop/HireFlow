@@ -80,8 +80,6 @@ const styles = StyleSheet.create({
   thumbnail: {
     width: 34,
     height: 34,
-    borderRadius: 4,
-    backgroundColor: theme.colors.border,
   },
   headerContent: {
     flex: 1,
