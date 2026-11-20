@@ -1,23 +1,36 @@
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import theme from "../../styles/theme";
+import OrganizationLogo from "./OrganizationLogo";
 
-export default function EntryCard({ item, isEditing, onEdit, onDelete }) {
+export default function EntryCard({
+  item,
+  isEditing,
+  onEdit,
+  onDelete,
+  logoName,
+  showCertificateDetails = false,
+}) {
   return (
     <View style={styles.card}>
-      {/* University Logo or fallback grey placeholder box */}
-      {item.logo ? (
-        <Image source={item.logo} style={styles.logo} />
-      ) : (
-        <View style={[styles.logo, styles.placeholderLogo]} />
-      )}
+      <OrganizationLogo name={logoName || item.title} style={styles.logo} />
 
       <View style={styles.contentContainer}>
         <View style={styles.headerRow}>
           <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
-          <Text style={styles.period}>{item.period}</Text>
+          {!!item.date && <Text style={styles.period}>{item.date}</Text>}
         </View>
         <Text style={styles.subtitle} numberOfLines={1}>{item.subtitle}</Text>
+        {showCertificateDetails && !!item.expirationDate && (
+          <Text style={styles.certificateDetail}>
+            Expires: {item.expirationDate}
+          </Text>
+        )}
+        {showCertificateDetails && !!item.credential && (
+          <Text style={styles.certificateDetail}>
+            Credential: {item.credential}
+          </Text>
+        )}
       </View>
 
       {isEditing && (
@@ -52,9 +65,6 @@ const styles = StyleSheet.create({
     marginRight: theme.spacing.small,
     resizeMode: "contain",
   },
-  placeholderLogo: {
-    backgroundColor: theme.colors.mutedBackground, // Uses your theme's muted color
-  },
   contentContainer: {
     flex: 1,
   },
@@ -78,6 +88,11 @@ const styles = StyleSheet.create({
     fontSize: theme.fontSize.xsmall,
     color: theme.fontColor.secondary,
     marginLeft: theme.spacing.small,
+  },
+  certificateDetail: {
+    color: theme.fontColor.secondary,
+    fontSize: theme.fontSize.xsmall,
+    marginTop: 4,
   },
   editActions: {
     flexDirection: "row",

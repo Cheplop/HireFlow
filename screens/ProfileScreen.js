@@ -3,6 +3,7 @@ import { Alert, Platform, StyleSheet } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 import { File, Paths } from "expo-file-system";
+import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import ProfileContent from "../components/profile/ProfileContent";
@@ -214,11 +215,22 @@ const styles = StyleSheet.create({
   },
 });
 
-export default function ProfileScreen() {
+export default function ProfileScreen({
+  profileUserId,
+  profileFallback,
+  readOnly = false,
+  headerContent,
+  footerContent,
+}) {
   const { user, logout } = useAuth();
-  // Each account gets its own starting data and its own photo slot.
-  const starter = useMemo(() => getStarterProfile(user), [user?.id]);
-  const photoStorageKey = `${PHOTO_STORAGE_KEY}:${user?.id ?? "guest"}`;
+  const router = useRouter();
+  const ownerId = readOnly ? profileUserId : profileUserId ?? user?.id;
+  const canEdit = !readOnly && user?.role === "employee" && ownerId === user.id;
+  const starter = useMemo(
+    () => profileFallback ?? getStarterProfile(user),
+    [profileFallback, user],
+  );
+  const photoStorageKey = `${PHOTO_STORAGE_KEY}:${ownerId ?? "guest"}`;
 
   const [activeSection, setActiveSection] = useState("Education");
   const [isEditing, setIsEditing] = useState(false);
@@ -234,34 +246,58 @@ export default function ProfileScreen() {
   const [editor, setEditor] = useState(null);
   const [form, setForm] = useState({});
   const [error, setError] = useState("");
-  const [profileLoaded, setProfileLoaded] = useState(false);
+  const [profileLoadedFor, setProfileLoadedFor] = useState(null);
 
-  // Load what this account saved (including answers from registration).
+  // Load the selected employee's saved profile, or the application snapshot.
   useEffect(() => {
-    if (!user?.id) return;
+    setProfileLoadedFor(null);
+    setProfile(starter.profile);
+    setEducation(starter.education);
+    setExperience(starter.experience);
+    setCertificates(starter.certificates);
+    setAbout(starter.about);
+    setAvatarUri(null);
+    setCoverUri(null);
+
+    if (!ownerId) return;
     let cancelled = false;
 
-    loadSavedProfile(user.id).then((saved) => {
+    loadSavedProfile(ownerId).then((saved) => {
       if (cancelled) return;
-      if (saved?.profile) setProfile(saved.profile);
-      if (saved?.education) setEducation(saved.education);
-      if (saved?.experience) setExperience(saved.experience);
-      if (saved?.certificates) setCertificates(saved.certificates);
-      if (saved?.about) setAbout(saved.about);
-      setProfileLoaded(true);
+      setProfile({
+        ...starter.profile,
+        ...(saved?.profile ?? {}),
+        email: saved?.profile?.email ?? starter.profile.email ?? saved?.email ?? "",
+        phone:
+          saved?.profile?.phone ??
+          saved?.contactNumber ??
+          starter.profile.phone ??
+          "",
+      });
+      setEducation(saved?.education ?? starter.education);
+      setExperience(saved?.experience ?? starter.experience);
+      setCertificates(saved?.certificates ?? starter.certificates);
+      setAbout({ ...starter.about, ...(saved?.about ?? {}) });
+      setProfileLoadedFor(ownerId);
     });
 
     return () => {
       cancelled = true;
     };
-  }, [user?.id]);
+  }, [ownerId, starter]);
 
-  // Save edits as they happen (only after the saved data has loaded, so we
-  // never overwrite it with the starting values).
+  // Do not save an employer's read-only view or data before its owner loads.
   useEffect(() => {
-    if (!profileLoaded || !user?.id) return;
-    saveProfileData(user.id, { profile, education, experience, certificates, about });
-  }, [profileLoaded, user?.id, profile, education, experience, certificates, about]);
+    if (!canEdit || profileLoadedFor !== ownerId || !ownerId) return;
+    saveProfileData(ownerId, {
+      profile,
+      contactNumber: profile.phone ?? "",
+      education,
+      experience,
+      certificates,
+      about,
+    });
+  }, [canEdit, profileLoadedFor, ownerId, profile, education, experience, certificates, about]);
 
   // Load this account's saved photos.
   useEffect(() => {
@@ -342,7 +378,13 @@ export default function ProfileScreen() {
 
     const clean = (key) => (form[key] ?? "").trim();
     if (editor.type === "profile") {
-      setProfile({ name: clean("name"), location: clean("location") });
+      setProfile({
+        name: clean("name"),
+        title: clean("title"),
+        location: clean("location"),
+        email: clean("email"),
+        phone: clean("phone"),
+      });
     } else if (editor.type === "about") {
       setAbout({
         text: clean("text"),
@@ -378,6 +420,8 @@ export default function ProfileScreen() {
           title: clean("title"),
           subtitle: clean("subtitle"),
           date: clean("date"),
+          expirationDate: clean("expirationDate"),
+          credential: clean("credential"),
         };
       }
 
@@ -424,6 +468,13 @@ export default function ProfileScreen() {
     setPhotoTarget(null);
 
     try {
+      // Let the photo options modal finish dismissing before presenting the
+      // native picker. Presenting both modals in the same frame can leave the
+      // picker hidden behind the profile modal on iOS and Android.
+      if (Platform.OS !== "web") {
+        await new Promise((resolve) => setTimeout(resolve, 250));
+      }
+
       const options = {
         mediaTypes: ["images"],
         allowsEditing: true,
@@ -541,9 +592,11 @@ export default function ProfileScreen() {
         profile={profile}
         coverUri={coverUri}
         avatarUri={avatarUri}
-        isEditing={isEditing}
+        avatarSource={profileFallback?.avatar}
+        isEditing={canEdit && isEditing}
+        canEdit={canEdit}
         onPhotoTarget={setPhotoTarget}
-        onMenuPress={() => setIsMenuVisible(true)}
+        onMenuPress={canEdit ? () => setIsMenuVisible(true) : undefined}
         onToggleEditing={() => setIsEditing((value) => !value)}
         onEditProfile={() => openEditor("profile")}
         sections={sections}
@@ -561,35 +614,41 @@ export default function ProfileScreen() {
         onEdit={(type, item) => openEditor(type, item)}
         onDelete={confirmDelete}
         onClearAbout={confirmClearAbout}
+        headerContent={headerContent}
+        footerContent={footerContent}
       />
-      <ProfileEditorModal
-        editor={editor}
-        config={editorConfig}
-        form={form}
-        setForm={setForm}
-        error={error}
-        setError={setError}
-        styles={styles}
-        onClose={closeEditor}
-        onSave={saveEditor}
-      />
-      <ProfilePhotoModal
-        photoTarget={photoTarget}
-        hasPhoto={photoTarget === "avatar" ? !!avatarUri : !!coverUri}
-        styles={styles}
-        onPickPhoto={pickPhoto}
-        onRemovePhoto={removePhoto}
-        onClose={() => setPhotoTarget(null)}
-      />
-      <ProfileMenu
-        visible={isMenuVisible}
-        onClose={() => setIsMenuVisible(false)}
-        onNotifications={() => Alert.alert("Notifications", "Notifications are not available yet.")}
-        onLogout={() => {
-          setUser(null);
-          router.dismissAll("/");
-        }}
-      />
+      {canEdit && (
+        <>
+          <ProfileEditorModal
+            editor={editor}
+            config={editorConfig}
+            form={form}
+            setForm={setForm}
+            error={error}
+            setError={setError}
+            styles={styles}
+            onClose={closeEditor}
+            onSave={saveEditor}
+          />
+          <ProfilePhotoModal
+            photoTarget={photoTarget}
+            hasPhoto={photoTarget === "avatar" ? !!avatarUri : !!coverUri}
+            styles={styles}
+            onPickPhoto={pickPhoto}
+            onRemovePhoto={removePhoto}
+            onClose={() => setPhotoTarget(null)}
+          />
+          <ProfileMenu
+            visible={isMenuVisible}
+            onClose={() => setIsMenuVisible(false)}
+            onNotifications={() => Alert.alert("Notifications", "Notifications are not available yet.")}
+            onLogout={async () => {
+              await logout();
+              router.replace("/");
+            }}
+          />
+        </>
+      )}
     </SafeAreaView>
   );
 }

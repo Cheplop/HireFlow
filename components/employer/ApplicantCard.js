@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { ChevronRight } from "lucide-react-native";
+import { ChevronRight, GraduationCap } from "lucide-react-native";
 import { Image, Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import theme from "../../styles/theme";
 import StatusCard from "../common/StatusCard";
@@ -9,6 +9,7 @@ export default function ApplicantCard({ applicant, jobId, status }) {
 
   return (
     <TouchableOpacity
+      accessibilityRole="button"
       style={styles.card}
       activeOpacity={0.7}
       onPress={() => router.push(`/applicants/${applicant.id}?jobId=${jobId}`)}
@@ -22,19 +23,28 @@ export default function ApplicantCard({ applicant, jobId, status }) {
       </View>
 
       <View style={styles.cardContent}>
+        <Text style={styles.applyingFor} numberOfLines={1}>
+          <Text style={styles.applyingForLabel}>Applying for: </Text>
+          <Text style={styles.applyingForTitle}>{applicant.jobTitle}</Text>
+        </Text>
         <Text style={styles.cardTitle} numberOfLines={1}>
           {applicant.name}
         </Text>
-        <Text style={styles.cardSubtitle} numberOfLines={1}>
-          {applicant.experience}
-        </Text>
-        <View style={styles.statusWrapper}>
-          <StatusCard status={status} />
+        <View style={styles.educationRow}>
+          <GraduationCap size={16} color={theme.fontColor.primary} />
+          <Text style={styles.cardSubtitle} numberOfLines={1}>
+            {applicant.education || "Education not added"}
+          </Text>
         </View>
       </View>
 
       <View style={styles.rightSection}>
-        <ChevronRight size={20} color={theme.fontColor.secondary} />
+        <ChevronRight
+          size={16}
+          color={theme.fontColor.secondary}
+          style={styles.chevron}
+        />
+        <StatusCard status={status} />
       </View>
     </TouchableOpacity>
   );
@@ -43,12 +53,15 @@ export default function ApplicantCard({ applicant, jobId, status }) {
 const styles = StyleSheet.create({
   card: {
     width: "100%",
-    padding: theme.spacing.medium,
-    borderRadius: theme.radius.large,
+    minHeight: 88,
+    padding: 12,
+    borderRadius: 22,
     flexDirection: "row",
     alignItems: "center",
-    gap: theme.spacing.medium,
+    gap: 12,
     backgroundColor: theme.colors.cardBackground,
+    borderWidth: 1,
+    borderColor: "#F0F1F4",
     // Cross-platform shadow (replaces CSS-only boxShadow)
     ...Platform.select({
       ios: {
@@ -67,9 +80,9 @@ const styles = StyleSheet.create({
   },
   imageContainer: {
     backgroundColor: theme.colors.cardBackground,
-    width: 56,
-    height: 56,
-    borderRadius: theme.radius.small,
+    width: 44,
+    height: 44,
+    borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
     overflow: "hidden",
@@ -81,24 +94,43 @@ const styles = StyleSheet.create({
   cardContent: {
     flex: 1,
     justifyContent: "center",
+    minWidth: 0,
+    gap: 4,
+  },
+  applyingFor: {
+    fontSize: 11,
+  },
+  applyingForLabel: {
+    color: theme.fontColor.secondary,
+  },
+  applyingForTitle: {
+    color: theme.fontColor.primary,
+  },
+  educationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
   cardTitle: {
     fontSize: theme.fontSize.medium,
-    fontWeight: "bold",
-    color: theme.fontColor.primary,
+    fontWeight: theme.fontWeight.semibold,
+    color: theme.fontColor.secondary,
   },
   cardSubtitle: {
+    flex: 1,
     fontSize: theme.fontSize.small,
     color: theme.fontColor.secondary,
-    marginTop: 2,
-  },
-  statusWrapper: {
-    marginTop: 8,
-    alignSelf: "flex-start",
   },
   rightSection: {
+    position: "relative",
     justifyContent: "center",
     alignItems: "center",
-    paddingLeft: 4,
+    width: 44,
+    alignSelf: "stretch",
+  },
+  chevron: {
+    position: "absolute",
+    top: 0,
+    right: -2,
   },
 });

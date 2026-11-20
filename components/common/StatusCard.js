@@ -6,22 +6,22 @@ export default function StatusCard({ status }) {
   const statusStyles = {
     Pending: { 
       backgroundColor: '#FFF2D6', 
-      icon: <CalendarClock size={20} color="#946200" />,
+      icon: <CalendarClock size={15} color="#946200" />,
       boxShadow: '#FFEA88 0px 0px 0px 3px' 
     },
     Accepted: { 
       backgroundColor: '#E5F4E0', 
-      icon: <ClipboardCheck size={20} color="#34733B" />,
+      icon: <ClipboardCheck size={15} color="#34733B" />,
       boxShadow: '#E1E9C9 0px 0px 0px 3px'
     },
     Declined: { 
-      backgroundColor: '#FCE8E6', 
-      icon: <X size={20} color="#B3261E" />,
-      boxShadow: '#F1B9B5 0px 0px 0px 3px'
+      backgroundColor: '#efc1ba', 
+      icon: <X size={15} color="#0c0100" />,
+      boxShadow: '#f5d6d1 0px 0px 0px 3px'
     },
     Completed: {
       backgroundColor: '#E4EEFF',
-      icon: <ClipboardCheck size={20} color="#315A9B" />,
+      icon: <ClipboardCheck size={15} color="#315A9B" />,
       boxShadow: '#D5E2F8 0px 0px 0px 3px'
     },
   };
@@ -36,13 +36,13 @@ export default function StatusCard({ status }) {
 
 const styles = StyleSheet.create({
   badge: {
-    minWidth: 40,
-    minHeight: 40,
+    minWidth: 15,
+    minHeight: 15,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
+    paddingHorizontal: 5,
+    paddingVertical: 5,
     
   },
   label: {

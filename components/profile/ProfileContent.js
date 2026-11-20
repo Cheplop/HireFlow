@@ -52,6 +52,7 @@ export default function ProfileContent(props) {
                   <EntryCard
                     key={item.id}
                     item={item}
+                    logoName={item.title}
                     isEditing={isEditing}
                     onEdit={() => onEdit("education", item)}
                     onDelete={() => onDelete("education", item)}
@@ -89,6 +90,7 @@ export default function ProfileContent(props) {
         <EntryCard
           key={item.id}
           item={item}
+          logoName={item.subtitle || item.title}
           isEditing={isEditing}
           onEdit={() => onEdit("certificates", item)}
           onDelete={() => onDelete("certificates", item)}

@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import theme from '../../styles/theme';
+import OrganizationLogo from "./OrganizationLogo";
 
 
 function DetailRow({ icon, text }) {
@@ -21,7 +22,7 @@ export default function ExperienceCard({ item, isEditing, onEdit, onDelete }) {
   return (
     <View style={styles.card}>
       <View style={styles.header}>
-        <View style={styles.thumbnail} />
+        <OrganizationLogo name={subtitle} style={styles.thumbnail} />
 
         <View style={styles.headerContent}>
           <View style={styles.titleRow}>

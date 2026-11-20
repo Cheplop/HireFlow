@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: theme.spacing.medium,
   },
   imageContainer: {
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
   statusContainer: {
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'center',
   },
   expandedSection: {

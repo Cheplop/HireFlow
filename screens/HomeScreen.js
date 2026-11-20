@@ -1,13 +1,12 @@
 import { useMemo, useState } from 'react';
-import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { FlatList, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Bell, Search } from 'lucide-react-native';
 
 import DashboardSummary from '@/components/DashboardSummary';
 import { ApplyCard } from '@/components/employee/ApplyCard';
-import { AuthInput } from '@/components/common/AuthInput';
 import { PrimaryButton } from '@/components/common/PrimaryButton';
+import SearchRow from '@/components/common/SearchRow';
 import { useAuth } from '../contexts/AuthContext';
 import { useJobs } from '../contexts/JobsContext';
 import theme from '../styles/theme';
@@ -40,7 +39,9 @@ export default function HomeScreen() {
         job.jobCompany,
         job.jobLocation,
         job.jobDescription,
-      ].join(' ').toLowerCase();
+      ]
+        .join(' ')
+        .toLowerCase();
 
       return matchesType && (!query || searchableText.includes(query));
     });
@@ -48,49 +49,38 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.safeAreaView} edges={['top']}>
-      <View style={styles.headerContainer}>
-        <View style={styles.search}>
-          <AuthInput
-            placeholder="Search jobs..."
-            value={search}
-            onChangeText={setSearch}
-            autoCapitalize="none"
-            icon={<Search size={20} color="#abb0b7" />}
-          />
-        </View>
-        <Pressable
-          accessibilityLabel={isEmployer ? 'View applicants' : 'View application updates'}
-          accessibilityRole="button"
-          onPress={() =>
-            router.push(isEmployer ? '/(tabs)/applicants' : '/(tabs)/applications')
-          }
-          style={styles.notification}
-        >
-          <Bell size={20} color={theme.fontColor.primary} />
-        </Pressable>
-      </View>
+      <SearchRow
+        placeholder="Search jobs..."
+        value={search}
+        onChangeText={setSearch}
+        notificationLabel={isEmployer ? 'View applicants' : 'View application updates'}
+        onNotificationPress={() =>
+          router.push(isEmployer ? '/(tabs)/applicants' : '/(tabs)/applications')
+        }
+      />
 
-      <View style={styles.filterWrapper}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.worktypeContainer}
-        >
-          {employmentTypes.map((type) => (
-            <PrimaryButton
-              key={type}
-              title={type}
-              variant={selectedType === type ? 'active' : 'inactive'}
-              onPress={() => setSelectedType(type)}
-              style={styles.filterButton}
-            />
-          ))}
-        </ScrollView>
-      </View>
+      {/* Job Type Filters */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.filterScroll}
+        contentContainerStyle={styles.filters}
+      >
+        {employmentTypes.map((type) => (
+          <PrimaryButton
+            key={type}
+            title={type}
+            variant={selectedType === type ? 'active' : 'inactive'}
+            onPress={() => setSelectedType(type)}
+            style={styles.filterButton}
+          />
+        ))}
+      </ScrollView>
 
       <FlatList
         data={filteredJobs}
         ListHeaderComponent={<DashboardSummary />}
+        style={styles.jobList}
         contentContainerStyle={styles.cards}
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
@@ -107,7 +97,9 @@ export default function HomeScreen() {
         )}
         keyExtractor={(item) => String(item.id)}
         ListEmptyComponent={
-          <Text style={styles.emptyState}>No jobs match your search. Try another keyword or filter.</Text>
+          <Text style={styles.emptyState}>
+            No jobs match your search. Try another keyword or filter.
+          </Text>
         }
       />
     </SafeAreaView>
@@ -118,54 +110,41 @@ const styles = StyleSheet.create({
   safeAreaView: {
     flex: 1,
     backgroundColor: theme.colors.background,
+    paddingHorizontal: 20,
   },
-  headerContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: theme.spacing.small,
-    width: '100%',
-    paddingHorizontal: 22,
+
+  filterScroll: {
+    flexGrow: 0,
+    flexShrink: 0,
   },
-  search: {
-    flex: 1,
-    height: 55,
+
+  filters: {
+    gap: 8,
+    paddingBottom: theme.spacing.medium,
   },
-  notification: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: 48,
-    height: 48,
-    padding: 0,
-    marginTop: 1,
-    backgroundColor: theme.colors.cardBackground,
-    borderColor: theme.colors.border,
-    borderWidth: 1,
-    borderRadius: theme.radius.large,
-  },
-  filterWrapper: {
-    marginTop: theme.spacing.small,
-  },
-  worktypeContainer: {
-    gap: theme.spacing.small,
-    paddingHorizontal: 22,
-    paddingBottom: theme.spacing.small,
-  },
+
   filterButton: {
     width: 'auto',
-    minWidth: 78,
-    height: 36,
+    minWidth: 84,
+    height: 34,
     paddingHorizontal: 14,
     paddingVertical: 6,
-    borderRadius: theme.radius.large,
+    borderRadius: 17,
     borderColor: theme.colors.border,
   },
-  cards: {
-    gap: theme.spacing.medium,
-    paddingBottom: 130, // Extra padding to clear bottom tab bar and floating action button
-    paddingHorizontal: 22,
-    paddingTop: theme.spacing.small,
-    flexGrow: 0, // Prevents the list from stretching/centering items vertically
+
+  jobList: {
+    flex: 1,
   },
+
+  cards: {
+    gap: 12,
+    paddingBottom: 130,
+    paddingHorizontal: 2,
+    paddingTop: 2,
+    flexGrow: 1,
+  },
+
   emptyState: {
     color: theme.fontColor.secondary,
     textAlign: 'center',

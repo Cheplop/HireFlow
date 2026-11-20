@@ -1,31 +1,29 @@
-import { useState, useCallback } from "react";
-import { Image, ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
-import { router, Link, useFocusEffect } from "expo-router";
+
+import { useState } from "react";
+import {
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  Pressable,
+} from "react-native";
+import { Link } from "expo-router";
 import { User, KeyRound, Eye, EyeOff } from "lucide-react-native";
+
 import theme from "../styles/theme";
-import { users } from "../data/users";
-
-
-
 import { AuthInput } from "@/components/common/AuthInput";
 import { PrimaryButton } from "@/components/common/PrimaryButton";
 import { useAuth } from "../contexts/AuthContext";
 
 export default function LoginScreen() {
-  const { setUser } = useAuth();
-    useFocusEffect(
-      useCallback(() =>{
-        setUser(null);
-      }, [setUser] )
-    );
+  const { login } = useAuth();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  }
-
-  const handleLogin = () => {
-    const account = users[email.toLowerCase()];
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleLogin = async () => {
     if (!email.trim() || !password) {
@@ -33,17 +31,23 @@ export default function LoginScreen() {
       return;
     }
 
-    setIsSubmitting(true);
-    const result = await login(email, password);
-    setIsSubmitting(false);
-
-    if (!result.ok) {
-      setError("PUK manka dol");
-      return;
-    }
-
-    // Success: PublicOnly (app/index.js) redirects to the tabs once the user is set.
     setError("");
+    setIsSubmitting(true);
+
+    try {
+      const result = await login(email.trim(), password);
+
+      if (!result.ok) {
+        setError("Incorrect username/email or password.");
+        return;
+      }
+
+      // PublicOnly handles redirection after successful login.
+    } catch (error) {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -56,6 +60,7 @@ export default function LoginScreen() {
               style={styles.logo}
             />
           </View>
+
           <View style={styles.header}>
             <Text style={styles.brand}>HireFlow</Text>
             <Text style={styles.subtitle}>
@@ -100,7 +105,10 @@ export default function LoginScreen() {
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
         <View style={styles.registerRow}>
-          <Text style={styles.registerText}>Don’t have an account? </Text>
+          <Text style={styles.registerText}>
+            Don’t have an account? 
+          </Text>
+
           <Link href="/registration">
             <Text style={styles.registerLink}>register here</Text>
           </Link>
@@ -109,8 +117,6 @@ export default function LoginScreen() {
     </ScrollView>
   );
 }
-
-
 
 const styles = StyleSheet.create({
   container: {

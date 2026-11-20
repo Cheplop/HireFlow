@@ -29,15 +29,6 @@ export default function ProfileHeader({
           />
         ) : null}
 
-        {isEditing && (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Edit cover photo"
-            style={styles.coverEditSurface}
-            onPress={() => onPhotoTarget('cover')}
-          />
-        )}
-
         <Pressable
           style={styles.menuButton}
           onPress={onMenuPress}
@@ -53,7 +44,12 @@ export default function ProfileHeader({
         </Pressable>
 
         {isEditing && (
-          <View style={styles.editBadge} pointerEvents="none">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Edit cover photo"
+            style={styles.editBadge}
+            onPress={() => onPhotoTarget('cover')}
+          >
             <Ionicons
               name="camera"
               size={12}
@@ -63,7 +59,7 @@ export default function ProfileHeader({
             <Text style={styles.editBadgeText}>
               Edit cover
             </Text>
-          </View>
+          </Pressable>
         )}
       </View>
 
@@ -115,11 +111,6 @@ const styles = StyleSheet.create({
     height: '100%',
   },
 
-  coverEditSurface: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 1,
-  },
-
 menuButton: {
   position: 'absolute',
   top: 10,
@@ -137,6 +128,8 @@ menuButton: {
     position: 'absolute',
     bottom: 8,
     right: 8,
+    zIndex: 12,
+    elevation: 12,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
