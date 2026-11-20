@@ -1,7 +1,9 @@
+import { companyLogos } from "./companyLogos";
+
 export const work = [
   {
     id: 1,
-    companyLogo: require("../assets/images/Hireflow.png"),
+    companyLogo: companyLogos.google,
     jobTitle: "Front End Developer",
     jobLocation: "Los Angeles, CA",
     jobCompany: "Google",
@@ -22,7 +24,7 @@ export const work = [
   },
   {
     id: 2,
-    companyLogo: require("../assets/images/icon.png"),
+    companyLogo: companyLogos.amazon,
     jobTitle: "Back End Developer",
     jobLocation: "Los Cagayan, CA",
     jobCompany: "Amazon",
@@ -42,10 +44,10 @@ export const work = [
   },
   {
     id: 3,
-    companyLogo: require("../assets/images/google.png"),
+    companyLogo: companyLogos.nasa,
     jobTitle: "Full End Developer",
     jobLocation: "Los Butuan, CA",
-    jobCompany: "Nasa",
+    jobCompany: "NASA",
     employerId: "bill",
     isPublished: true,
     jobMode: "Part-time",
@@ -62,10 +64,10 @@ export const work = [
   },
   {
     id: 4,
-    companyLogo: require("../assets/images/google.png"),
+    companyLogo: companyLogos.nasa,
     jobTitle: "Full End Developer",
     jobLocation: "Los Butuan, CA",
-    jobCompany: "Nasa",
+    jobCompany: "NASA",
     employerId: "bill",
     isPublished: true,
     jobMode: "Full-time",
@@ -82,7 +84,7 @@ export const work = [
   },
   {
     id: 5,
-    companyLogo: require("../assets/images/Hireflow.png"),
+    companyLogo: companyLogos.hireflow,
     jobTitle: "Product Designer",
     jobLocation: "Manila, Philippines",
     jobCompany: "HireFlow",

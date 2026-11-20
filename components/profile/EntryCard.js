@@ -1,21 +1,23 @@
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import ProfileLogo from "./ProfileLogo";
+import { getOrganizationLogo, getSchoolLogo } from "../../data/companyLogos";
 import theme from "../../styles/theme";
 
 export default function EntryCard({ item, isEditing, onEdit, onDelete }) {
+  const logo =
+    item.logo ||
+    getSchoolLogo(item.title) ||
+    getOrganizationLogo(item.subtitle);
+
   return (
     <View style={styles.card}>
-      {/* University Logo or fallback grey placeholder box */}
-      {item.logo ? (
-        <Image source={item.logo} style={styles.logo} />
-      ) : (
-        <View style={[styles.logo, styles.placeholderLogo]} />
-      )}
+      <ProfileLogo source={logo} kind="school" style={styles.logo} />
 
       <View style={styles.contentContainer}>
         <View style={styles.headerRow}>
           <Text style={styles.title} numberOfLines={1}>{item.title}</Text>
-          <Text style={styles.period}>{item.period}</Text>
+          <Text style={styles.period}>{item.date ?? item.period}</Text>
         </View>
         <Text style={styles.subtitle} numberOfLines={1}>{item.subtitle}</Text>
       </View>
@@ -50,10 +52,6 @@ const styles = StyleSheet.create({
     height: 42,
     borderRadius: theme.radius.small,
     marginRight: theme.spacing.small,
-    resizeMode: "contain",
-  },
-  placeholderLogo: {
-    backgroundColor: theme.colors.mutedBackground, // Uses your theme's muted color
   },
   contentContainer: {
     flex: 1,

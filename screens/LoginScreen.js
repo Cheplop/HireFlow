@@ -1,49 +1,45 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { Image, ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
-import { router, Link, useFocusEffect } from "expo-router";
+import { Link } from "expo-router";
 import { User, KeyRound, Eye, EyeOff } from "lucide-react-native";
 import theme from "../styles/theme";
-import { users } from "../data/users";
-
-
 
 import { AuthInput } from "@/components/common/AuthInput";
 import { PrimaryButton } from "@/components/common/PrimaryButton";
 import { useAuth } from "../contexts/AuthContext";
 
 export default function LoginScreen() {
-  const { setUser } = useAuth();
-    useFocusEffect(
-      useCallback(() =>{
-        setUser(null);
-      }, [setUser] )
-    );
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  }
-
-  const handleLogin = () => {
-    const account = users[email.toLowerCase()];
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleLogin = async () => {
     if (!email.trim() || !password) {
-      setError("Wakay gi input dol!");
+      setError("Enter your username/email and password.");
       return;
     }
 
     setIsSubmitting(true);
-    const result = await login(email, password);
-    setIsSubmitting(false);
+    try {
+      const result = await login(email, password);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
 
-    if (!result.ok) {
-      setError("PUK manka dol");
-      return;
+      setError("");
+    } catch (loginError) {
+      setError(
+        loginError instanceof Error
+          ? loginError.message
+          : "Could not log in. Please try again.",
+      );
+    } finally {
+      setIsSubmitting(false);
     }
-
-    // Success: PublicOnly (app/index.js) redirects to the tabs once the user is set.
-    setError("");
   };
 
   return (
