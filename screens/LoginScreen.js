@@ -1,7 +1,14 @@
+import { Link, router } from "expo-router";
+import { Eye, EyeOff, KeyRound, User } from "lucide-react-native";
 import { useState } from "react";
-import { Image, ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
-import { router, Link } from "expo-router";
-import { User, KeyRound, Eye, EyeOff } from "lucide-react-native";
+import {
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import theme from "../styles/theme";
 
 import { AuthInput } from "@/components/common/AuthInput";
@@ -12,14 +19,14 @@ export default function LoginScreen() {
   const { setUser } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState ("");
+  const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-
 
   const handleLogin = () => {
     const accounts = {
       remiel: { id: "remiel", username: "remiel", role: "employee" },
       bill: { id: "bill", username: "Bill", role: "employer" },
+      sean: { id: "sean", username: "Sean", role: "employer" },
     };
     const account = accounts[email.toLowerCase()];
 
@@ -84,10 +91,7 @@ export default function LoginScreen() {
           }
         />
 
-        <PrimaryButton
-          title="Log in"
-          onPress={handleLogin}
-        />
+        <PrimaryButton title="Log in" onPress={handleLogin} />
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -101,8 +105,6 @@ export default function LoginScreen() {
     </ScrollView>
   );
 }
-
-
 
 const styles = StyleSheet.create({
   container: {
