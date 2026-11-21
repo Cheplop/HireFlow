@@ -1,19 +1,26 @@
-import { useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
-    BookOpen,
-    Briefcase,
-    Mail,
-    Phone,
-    Sparkles
+  BookOpen,
+  Briefcase,
+  Mail,
+  Phone,
+  Sparkles,
 } from "lucide-react-native";
-import { Image, ScrollView, StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import {
+  Image,
+  Linking,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { PrimaryButton } from "@/components/common/PrimaryButton";
 import StatusCard from "@/components/common/StatusCard";
-import { useAuth } from "../../contexts/AuthContext";
 import { useApplications } from "../../contexts/ApplicationsContext";
+import { useAuth } from "../../contexts/AuthContext";
 import { useJobs } from "../../contexts/JobsContext";
 import theme from "../../styles/theme";
 
@@ -50,6 +57,38 @@ export default function ApplicantDetails() {
       setError("");
     } catch (updateError) {
       setError(updateError.message);
+    }
+  }
+
+  async function sendJobOfferEmail() {
+    if (!applicant?.contactEmail) {
+      setError("This applicant does not have a contact email on file.");
+      return;
+    }
+
+    const subject = encodeURIComponent(
+      `Job Offer: ${job.jobTitle} at ${job.jobCompany}`,
+    );
+    const body = encodeURIComponent(
+      `Hi ${applicant.name},\n\n` +
+        `Congratulations! We are pleased to offer you the position of ${job.jobTitle} at ${job.jobCompany} (${job.jobMode} · ${job.jobType}).\n\n` +
+        `Salary: ₱${Number(job.salary || 0).toLocaleString()}\n\n` +
+        `Please reply to this email to confirm your acceptance and discuss next steps.\n\n` +
+        `Best regards,\n${user.username}\n${job.jobCompany}`,
+    );
+
+    const mailtoUrl = `mailto:${applicant.contactEmail}?subject=${subject}&body=${body}`;
+
+    try {
+      const supported = await Linking.canOpenURL(mailtoUrl);
+      if (supported) {
+        await Linking.openURL(mailtoUrl);
+        setError("");
+      } else {
+        setError("No email app (such as Gmail) is available on this device.");
+      }
+    } catch {
+      setError("Could not open email app.");
     }
   }
 
@@ -120,16 +159,26 @@ export default function ApplicantDetails() {
         </View>
 
         <View style={styles.actions}>
-          {["Pending", "Accepted", "Declined", "Completed"].map((nextStatus) => (
-            <PrimaryButton
-              key={nextStatus}
-              title={nextStatus}
-              variant={status === nextStatus ? "active" : "inactive"}
-              onPress={() => updateStatus(nextStatus)}
-              style={styles.actionButton}
-            />
-          ))}
+          {["Pending", "Accepted", "Declined", "Completed"].map(
+            (nextStatus) => (
+              <PrimaryButton
+                key={nextStatus}
+                title={nextStatus}
+                variant={status === nextStatus ? "active" : "inactive"}
+                onPress={() => updateStatus(nextStatus)}
+                style={styles.actionButton}
+              />
+            ),
+          )}
         </View>
+
+        {status === "Accepted" && (
+          <PrimaryButton
+            title="Send Job Offer via Gmail"
+            onPress={sendJobOfferEmail}
+          />
+        )}
+
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
       </ScrollView>
     </SafeAreaView>

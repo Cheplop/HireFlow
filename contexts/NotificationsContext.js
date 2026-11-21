@@ -1,0 +1,295 @@
+import {
+    createContext,
+    useCallback,
+    useContext,
+    useRef,
+    useState,
+} from "react";
+
+import { applicants as seedApplicants } from "../data/applicants";
+import { work } from "../data/jobs";
+import { useJobs } from "./JobsContext";
+import { useNotifications } from "./NotificationsContext";
+
+const ApplicationsContext = createContext(null);
+
+export function ApplicationsProvider({ children }) {
+  const { getJobById } = useJobs();
+  const { addNotification } = useNotifications();
+
+  // Seed existing sample applications
+  const seededApplications = seedApplicants.flatMap((applicant) =>
+    applicant.appliedJobIds.map((jobId) => ({
+      jobId,
+      employeeId: `seed-${applicant.id}`,
+      applicant,
+      status: applicant.applicationStatuses[jobId] || "Pending",
+      coverLetter: "",
+    })),
+  );
+
+  // Preserve existing legacy applications
+  const legacyApplications = work
+    .filter((job) => job.status)
+    .map((job) => ({
+      jobId: job.id,
+      employeeId: "remiel",
+      applicant: {
+        id: "remiel",
+        name: "Remiel",
+        avatar: require("../assets/images/Hireflow.png"),
+        education: "",
+        experience: "",
+        skills: [],
+        contactEmail: "",
+        contactPhone: "",
+        about: "",
+      },
+      status: job.status,
+      coverLetter: "",
+    }));
+
+  const initialApplications = [
+    ...seededApplications,
+    ...legacyApplications,
+  ].map((application, index) => ({
+    ...application,
+    id: index + 1,
+  }));
+
+  const [applications, setApplications] = useState(initialApplications);
+  const nextApplicationId = useRef(initialApplications.length + 1);
+
+  // Create an application
+  const applyForJob = useCallback(
+    (jobId, user, coverLetter) => {
+      const job = getJobById(jobId);
+
+      if (user?.role !== "employee" || !job?.isPublished) {
+        throw new Error("This job is not available for your account.");
+      }
+
+      const trimmedCoverLetter =
+        typeof coverLetter === "string" ? coverLetter.trim() : "";
+
+      if (trimmedCoverLetter.length < 50 || trimmedCoverLetter.length > 1000) {
+        throw new Error(
+          "Your cover letter must contain between 50 and 1000 characters.",
+        );
+      }
+
+      if (
+        applications.some(
+          (application) =>
+            application.jobId === job.id && application.employeeId === user.id,
+        )
+      ) {
+        throw new Error("You have already applied for this job.");
+      }
+
+      const application = {
+        id: nextApplicationId.current,
+        jobId: job.id,
+        employeeId: user.id,
+        applicant: {
+          id: user.id,
+          name: user.username,
+          avatar: require("../assets/images/Hireflow.png"),
+          education: "",
+          experience: "",
+          skills: [],
+          contactEmail: "",
+          contactPhone: "",
+          about: "",
+        },
+        status: "Pending",
+        coverLetter: trimmedCoverLetter,
+      };
+
+      nextApplicationId.current += 1;
+
+      setApplications((current) => [...current, application]);
+
+      addNotification({
+        recipientId: job.employerId,
+        title: "New Application Received",
+        message: `${user.username} applied for ${job.jobTitle}.`,
+      });
+
+      return application;
+    },
+    [addNotification, applications, getJobById],
+  );
+
+  // Get one employee's application for a specific job
+  const getApplication = useCallback(
+    (jobId, employeeId) =>
+      applications.find(
+        (application) =>
+          application.jobId === Number(jobId) &&
+          application.employeeId === employeeId,
+      ),
+    [applications],
+  );
+
+  // Get application using its ID
+  const getApplicationById = useCallback(
+    (applicationId) =>
+      applications.find(
+        (application) => String(application.id) === String(applicationId),
+      ),
+    [applications],
+  );
+
+  // Get all applications submitted by an employee
+  const getApplicationsForEmployee = useCallback(
+    (employeeId) =>
+      applications.filter(
+        (application) => application.employeeId === employeeId,
+      ),
+    [applications],
+  );
+
+  // Get all applications submitted to a job
+  const getApplicationsForJob = useCallback(
+    (jobId) =>
+      applications.filter((application) => application.jobId === Number(jobId)),
+    [applications],
+  );
+
+  // Allow employees to edit their pending applications
+  const updateEmployeeApplication = useCallback(
+    (applicationId, employeeId, changes) => {
+      const application = getApplicationById(applicationId);
+
+      if (
+        !application ||
+        application.employeeId !== employeeId ||
+        application.status !== "Pending"
+      ) {
+        throw new Error("Only your pending applications can be edited.");
+      }
+
+      const trimmedCoverLetter =
+        typeof changes.coverLetter === "string"
+          ? changes.coverLetter.trim()
+          : "";
+
+      if (trimmedCoverLetter.length < 50 || trimmedCoverLetter.length > 1000) {
+        throw new Error(
+          "Your cover letter must contain between 50 and 1000 characters.",
+        );
+      }
+
+      setApplications((current) =>
+        current.map((item) =>
+          item.id === application.id
+            ? { ...item, coverLetter: trimmedCoverLetter }
+            : item,
+        ),
+      );
+    },
+    [getApplicationById],
+  );
+
+  // Allow employees to withdraw pending applications
+  const withdrawApplication = useCallback(
+    (applicationId, employeeId) => {
+      const application = getApplicationById(applicationId);
+
+      if (
+        !application ||
+        application.employeeId !== employeeId ||
+        application.status !== "Pending"
+      ) {
+        throw new Error("Only your pending applications can be withdrawn.");
+      }
+
+      setApplications((current) =>
+        current.filter((item) => item.id !== application.id),
+      );
+    },
+    [getApplicationById],
+  );
+
+  // Allow employers to update application status
+  const setApplicationStatus = useCallback(
+    (applicationId, employerId, status) => {
+      const application = getApplicationById(applicationId);
+      const job = application && getJobById(application.jobId);
+
+      const allowedStatuses = ["Pending", "Accepted", "Declined", "Completed"];
+
+      if (!application || !job || job.employerId !== employerId) {
+        throw new Error("You can only manage applicants for your own jobs.");
+      }
+
+      if (!allowedStatuses.includes(status)) {
+        throw new Error("Choose a valid application status.");
+      }
+
+      setApplications((current) =>
+        current.map((item) =>
+          item.id === application.id ? { ...item, status } : item,
+        ),
+      );
+
+      addNotification({
+        recipientId: application.employeeId,
+        title: `Application ${status}`,
+        message:
+          status === "Accepted"
+            ? `Congrats! Your application for ${job.jobTitle} at ${job.jobCompany} was accepted. Check your Gmail for an offer!`
+            : `Your application status for ${job.jobTitle} at ${job.jobCompany} is now ${status}.`,
+      });
+    },
+    [addNotification, getApplicationById, getJobById],
+  );
+
+  // Allow employers to delete applications for their own jobs
+  const deleteApplicationsForJob = useCallback(
+    (jobId, employerId) => {
+      const job = getJobById(jobId);
+
+      if (!job || job.employerId !== employerId) {
+        throw new Error("You can only delete applicants for your own jobs.");
+      }
+
+      setApplications((current) =>
+        current.filter((application) => application.jobId !== job.id),
+      );
+    },
+    [getJobById],
+  );
+
+  return (
+    <ApplicationsContext.Provider
+      value={{
+        applications,
+        applyForJob,
+        getApplication,
+        getApplicationById,
+        getApplicationsForEmployee,
+        getApplicationsForJob,
+        updateEmployeeApplication,
+        withdrawApplication,
+        setApplicationStatus,
+        deleteApplicationsForJob,
+      }}
+    >
+      {children}
+    </ApplicationsContext.Provider>
+  );
+}
+
+export function useApplications() {
+  const context = useContext(ApplicationsContext);
+
+  if (!context) {
+    throw new Error(
+      "useApplications must be used within ApplicationsProvider.",
+    );
+  }
+
+  return context;
+}
