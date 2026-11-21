@@ -1,16 +1,44 @@
-import { useState } from "react";
-import { View, Text, StyleSheet, ScrollView} from "react-native";
-import { AuthInput } from "@/components/common/AuthInput";
-import { PrimaryButton } from "@/components/common/PrimaryButton";
-import { router } from "expo-router";
-import theme from "../../styles/theme";
-import { useAuth } from "../../contexts/AuthContext";
-import { loadSavedProfile, saveProfileData } from "../../data/profileStorage";
-
+import { useCallback, useState } from "react";
+import {
+  BackHandler,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { router, useFocusEffect } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
 
-export default function BasicInformationScreen() {
-  const { user } = useAuth();
+import { AuthInput } from "@/components/common/AuthInput";
+import { PrimaryButton } from "@/components/common/PrimaryButton";
+import EmployeeOnly from "../../components/EmployeeOnly";
+import { useAuth } from "../../contexts/AuthContext";
+import { loadSavedProfile, saveProfileData } from "../../data/profileStorage";
+import theme from "../../styles/theme";
+
+function BasicInformationScreen() {
+  const { user, logout } = useAuth();
+
+  // Back returns to the Create account form. Navigate first: once the user is
+  // cleared, EmployeeOnly would redirect this screen to /login.
+  const handleBack = useCallback(async () => {
+    router.replace("/registration");
+    await logout();
+  }, [logout]);
+
+  // Make Android's back button behave the same as the arrow.
+  useFocusEffect(
+    useCallback(() => {
+      const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
+        handleBack();
+        return true;
+      });
+      return () => subscription.remove();
+    }, [handleBack]),
+  );
+
   const [values, setValues] = useState({
     fullName: "",
     middleName: "",
@@ -39,114 +67,91 @@ export default function BasicInformationScreen() {
   };
 
   return (
-    <ScrollView style>
-      <View style={styles.card}>
-        <ChevronLeft size={30} color="black" style={{ marginBottom: 20 }} onPress={() => router.back()} />
-        <View style={styles.header}>
-          <Text style={styles.brand}>Basic Information</Text>
-          <View style={styles.description}>
-            <Text style={styles.subtitle}>
-              Please provide your basic information to get started.
-            </Text>
+    <KeyboardAvoidingView
+      style={styles.screen}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+        <View style={styles.card}>
+          <View style={styles.header}>
+            <ChevronLeft size={30} color="black" style={styles.back} onPress={handleBack} />
+            <Text style={styles.title}>Basic Information</Text>
+            <Text style={styles.subtitle}>Please provide your basic information to get started.</Text>
           </View>
-        </View>
 
-        <AuthInput
-          label="Full name"
-          placeholder="Jane Doe"
-          value={values.fullName}
-          onChangeText={setField("fullName")}
-        />
-        <AuthInput
-          label="Middle Name"
-          placeholder="Ex: Cruz"
-          value={values.middleName}
-          onChangeText={setField("middleName")}
-        />
-        <View style={{ flexDirection: "row", width: "100%", gap: 12 }}>
           <AuthInput
-            style={{ flex: 3 }}
-            label="Last Name"
-            placeholder="Ex: Doe"
-            value={values.lastName}
-            onChangeText={setField("lastName")}
+            label="Full name"
+            placeholder="Jane Doe"
+            value={values.fullName}
+            onChangeText={setField("fullName")}
           />
           <AuthInput
-            style={{ flex: 1 }}
-            label="Suffix"
-            placeholder="Ex: Jr."
-            value={values.suffix}
-            onChangeText={setField("suffix")}
+            label="Middle Name"
+            placeholder="Ex: Cruz"
+            value={values.middleName}
+            onChangeText={setField("middleName")}
           />
+          <View style={styles.row}>
+            <AuthInput
+              style={{ flex: 3 }}
+              label="Last Name"
+              placeholder="Ex: Doe"
+              value={values.lastName}
+              onChangeText={setField("lastName")}
+            />
+            <AuthInput
+              style={{ flex: 1 }}
+              label="Suffix"
+              placeholder="Ex: Jr."
+              value={values.suffix}
+              onChangeText={setField("suffix")}
+            />
+          </View>
+          <AuthInput
+            label="Contact Number"
+            placeholder="Enter your phone number"
+            keyboardType="phone-pad"
+            value={values.contactNumber}
+            onChangeText={setField("contactNumber")}
+          />
+
+          <PrimaryButton title="NEXT" onPress={handleNext} />
         </View>
-
-        <AuthInput
-          label="Contact Number"
-          placeholder="Enter your phone number"
-          keyboardType="phone-pad"
-          value={values.contactNumber}
-          onChangeText={setField("contactNumber")}
-        />
-
-        <PrimaryButton title="NEXT" onPress={handleNext} />
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
-// ...your existing `const styles = StyleSheet.create({ ... });` stays here
-  const styles = StyleSheet.create({
+export default function BasicInformationRoute() {
+  return (
+    <EmployeeOnly>
+      <BasicInformationScreen />
+    </EmployeeOnly>
+  );
+}
+
+const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: theme.colors.background },
   container: {
     flexGrow: 1,
     backgroundColor: theme.colors.background,
-    justifyContent: "start",
-    alignItems: "stretch",
     paddingHorizontal: 22,
     paddingVertical: 36,
   },
-  header: {
-    marginBottom: 18,
-  },
-  brand: {
-    color: theme.fontColor.primary,
-    fontSize: theme.fontSize.large,
-    fontWeight: "500",
-    letterSpacing: 1.2,
-    marginBottom: 12,
-  },
+  card: { backgroundColor: theme.colors.cardBackground, padding: 22 },
+  header: { marginBottom: 18 },
+  back: { marginBottom: 20 },
   title: {
-    color: theme.fontColor.primary,
-    fontSize: theme.fontSize.xl,
+    color: theme.colors.title,
+    fontSize: theme.fontSize.title,
     fontWeight: "400",
     letterSpacing: -1,
     marginBottom: 8,
-    textTransform: "uppercase",
   },
   subtitle: {
-    color: theme.fontColor.secondary,
+    color: theme.colors.subtitle,
     fontSize: theme.fontSize.medium,
-    lineHeight: theme.spacing.large,
+    lineHeight: 22,
   },
-  card: {
-    backgroundColor: theme.colors.background,
-    padding: 40,
-  },
-  registerRow: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 18,
-  },
-  registerText: {
-    color: theme.fontColor.secondary,
-    fontSize: theme.fontSize.small,
-  },
-  registerLink: {
-    color: theme.fontColor.primary,
-    fontSize: theme.fontSize.small,
-    fontWeight: "700",
-  },
-  description:{
-    width: 250
-  }
+  row: { flexDirection: "row", width: "100%", gap: 12 },
 });
