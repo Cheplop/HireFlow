@@ -1,25 +1,25 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
 import { LogOut, Users } from "lucide-react-native";
 import { useEffect, useMemo, useState } from "react";
 import {
-  Alert,
   ActivityIndicator,
+  Alert,
   FlatList,
-  Pressable,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import ApplicantCard from "@/components/employer/ApplicantCard";
 import { PrimaryButton } from "@/components/common/PrimaryButton";
 import SearchRow from "@/components/common/SearchRow";
-import { useAuth } from "../contexts/AuthContext";
+import ApplicantCard from "@/components/employer/ApplicantCard";
 import { useApplicants } from "../contexts/ApplicantsContext";
+import { useAuth } from "../contexts/AuthContext";
 import { useJobs } from "../contexts/JobsContext";
 import { PHOTO_STORAGE_KEY } from "../data/ProfileScreen.data";
 import theme from "../styles/theme";
@@ -36,23 +36,15 @@ export default function ApplicantManagementScreen() {
   const router = useRouter();
   const { getJobsForEmployer } = useJobs();
   const employerJobs = user?.id ? getJobsForEmployer(user.id) : [];
-  const {
-    getApplicantsByJob,
-    hasLoadedApplications,
-    loadError,
-    saveError,
-  } = useApplicants();
+  const { getApplicantsByJob, hasLoadedApplications, loadError, saveError } =
+    useApplicants();
 
-  const applications = useMemo(
-    () =>
-      employerJobs.flatMap((job) =>
-        getApplicantsByJob(job.id, user.id).map((applicant) => ({
-          ...applicant,
-          jobTitle: job.jobTitle,
-          jobMode: job.jobMode,
-        })),
-      ),
-    [employerJobs, getApplicantsByJob, user?.id],
+  const applications = employerJobs.flatMap((job) =>
+    getApplicantsByJob(job.id, user?.id).map((applicant) => ({
+      ...applicant,
+      jobTitle: job.jobTitle,
+      jobMode: job.jobMode,
+    })),
   );
 
   const filteredApplicants = useMemo(() => {
@@ -67,7 +59,9 @@ export default function ApplicantManagementScreen() {
         applicant.jobTitle,
         applicant.education,
       ].some((value) =>
-        String(value ?? "").toLowerCase().includes(query),
+        String(value ?? "")
+          .toLowerCase()
+          .includes(query),
       );
 
       return matchesMode && matchesSearch;
@@ -77,17 +71,21 @@ export default function ApplicantManagementScreen() {
   useEffect(() => {
     if (!hasLoadedApplications) return undefined;
     let active = true;
-    const employeeIds = [...new Set(
-      applications.map((applicant) => applicant.employeeId).filter(Boolean),
-    )];
-
-    if (!employeeIds.length) {
-      setProfilePhotos({});
-      setPhotoLoadError("");
-      return () => { active = false; };
-    }
+    const employeeIds = [
+      ...new Set(
+        applications.map((applicant) => applicant.employeeId).filter(Boolean),
+      ),
+    ];
 
     async function loadPhotos() {
+      if (!employeeIds.length) {
+        if (active) {
+          setProfilePhotos({});
+          setPhotoLoadError("");
+        }
+        return;
+      }
+
       try {
         const savedEntries = await AsyncStorage.multiGet(
           employeeIds.map((id) => `${PHOTO_STORAGE_KEY}:${id}`),
@@ -100,14 +98,17 @@ export default function ApplicantManagementScreen() {
           try {
             const avatarUri = JSON.parse(value)?.avatarUri;
             const employeeId = key.slice(`${PHOTO_STORAGE_KEY}:`.length);
-            if (typeof avatarUri === "string") photos[employeeId] = { uri: avatarUri };
+            if (typeof avatarUri === "string")
+              photos[employeeId] = { uri: avatarUri };
           } catch {
             hasInvalidPhotoData = true;
           }
         });
         setProfilePhotos(photos);
         setPhotoLoadError(
-          hasInvalidPhotoData ? "Some applicant profile photos could not be loaded." : "",
+          hasInvalidPhotoData
+            ? "Some applicant profile photos could not be loaded."
+            : "",
         );
       } catch (error) {
         if (active) {
@@ -121,7 +122,9 @@ export default function ApplicantManagementScreen() {
     }
 
     void loadPhotos();
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [applications, hasLoadedApplications]);
 
   const performLogout = async () => {
@@ -168,9 +171,7 @@ export default function ApplicantManagementScreen() {
         value={search}
         onChangeText={setSearch}
         notificationLabel="Notifications"
-        onNotificationPress={() =>
-          Alert.alert("Notifications", "Notifications are not available yet.")
-        }
+        onNotificationPress={() => router.push("/notifications")}
       />
 
       {/* Job Type Filters & Logout */}
@@ -224,33 +225,39 @@ export default function ApplicantManagementScreen() {
         ListHeaderComponent={
           loadError || saveError || photoLoadError ? (
             <Text style={styles.errorText}>
-              {[loadError, saveError, photoLoadError].filter(Boolean).join("\n")}
+              {[loadError, saveError, photoLoadError]
+                .filter(Boolean)
+                .join("\n")}
             </Text>
           ) : null
         }
         ListEmptyComponent={
-          !hasLoadedApplications ? <View style={styles.emptyState}>
-            <ActivityIndicator color={theme.colors.primary} />
-            <Text style={styles.emptyText}>Loading applications…</Text>
-          </View> : <View style={styles.emptyState}>
-            <Users size={40} color={theme.fontColor.secondary} />
+          !hasLoadedApplications ? (
+            <View style={styles.emptyState}>
+              <ActivityIndicator color={theme.colors.primary} />
+              <Text style={styles.emptyText}>Loading applications…</Text>
+            </View>
+          ) : (
+            <View style={styles.emptyState}>
+              <Users size={40} color={theme.fontColor.secondary} />
 
-            <Text style={styles.emptyTitle}>
-              {employerJobs.length
-                ? applications.length
-                  ? "No applications found"
-                  : "No applications yet"
-                : "No jobs yet"}
-            </Text>
+              <Text style={styles.emptyTitle}>
+                {employerJobs.length
+                  ? applications.length
+                    ? "No applications found"
+                    : "No applications yet"
+                  : "No jobs yet"}
+              </Text>
 
-            <Text style={styles.emptyText}>
-              {employerJobs.length
-                ? applications.length
-                  ? "Try another job type or search term."
-                  : "Applicants will appear here when they apply to your listings."
-                : "Applicants will appear here when they apply to your listings."}
-            </Text>
-          </View>
+              <Text style={styles.emptyText}>
+                {employerJobs.length
+                  ? applications.length
+                    ? "Try another job type or search term."
+                    : "Applicants will appear here when they apply to your listings."
+                  : "Applicants will appear here when they apply to your listings."}
+              </Text>
+            </View>
+          )
         }
       />
     </SafeAreaView>

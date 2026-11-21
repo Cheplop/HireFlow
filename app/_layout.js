@@ -1,9 +1,23 @@
 import { Stack } from "expo-router";
+import { Platform } from "react-native";
 import { ApplicantsProvider } from "../contexts/ApplicantsContext";
 import { ApplicationsProvider } from "../contexts/ApplicationsContext";
 import { AuthProvider } from "../contexts/AuthContext";
 import { JobsProvider } from "../contexts/JobsContext";
 import { NotificationsProvider } from "../contexts/NotificationsContext";
+
+if (Platform.OS === "web") {
+  const originalConsoleError = console.error;
+  console.error = (...args) => {
+    if (
+      typeof args[0] === "string" &&
+      args[0].includes("Unknown event handler property")
+    ) {
+      return;
+    }
+    originalConsoleError(...args);
+  };
+}
 
 export default function RootLayout() {
   return (
