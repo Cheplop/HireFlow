@@ -1,5 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
+  Award,
   Bell,
   BookOpen,
   Briefcase,
@@ -29,6 +30,8 @@ import { useNotifications } from "../../contexts/NotificationsContext";
 import { getApplicantStarterProfile } from "../../data/profileStorage";
 import theme from "../../styles/theme";
 
+const profileTabs = ["Education", "Job Experience", "Licenses & Cert"];
+
 export default function ApplicantDetails() {
   const { id, jobId } = useLocalSearchParams();
   const router = useRouter();
@@ -37,13 +40,18 @@ export default function ApplicantDetails() {
   const { getJobById } = useJobs();
   const { getUnreadCount } = useNotifications();
   const unreadCount = user ? getUnreadCount(user.id) : 0;
+
   const application = getApplicationById(id);
   const applicant = application?.applicant;
   const job = application && getJobById(application.jobId);
   const requestedJobId = Array.isArray(jobId) ? jobId[0] : jobId;
   const status = application?.status;
+
+  const [showFullProfile, setShowFullProfile] = useState(false);
+  const [selectedProfileTab, setSelectedProfileTab] = useState("Education");
   const [error, setError] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
+
   const profileFallback = getApplicantStarterProfile(applicant);
 
   if (
@@ -68,10 +76,17 @@ export default function ApplicantDetails() {
   const contactPhone = applicant.contactPhone || profileFallback?.contactPhone;
   const education = applicant.education || profileFallback?.education;
   const experience = applicant.experience || profileFallback?.experience;
+  const certifications =
+    applicant.certifications || profileFallback?.certifications || "";
   const about = applicant.about || profileFallback?.about;
   const skills = applicant.skills?.length
     ? applicant.skills
     : profileFallback?.skills || [];
+
+  const coverLetterText =
+    typeof application.coverLetter === "string"
+      ? application.coverLetter
+      : application.coverLetter?.text || "";
 
   async function updateStatus(nextStatus) {
     if (isUpdating) return;
@@ -86,21 +101,31 @@ export default function ApplicantDetails() {
     }
   }
 
-  async function sendJobOfferEmail() {
+  async function openApplicantEmail(type) {
     if (!contactEmail) {
       setError("This applicant does not have a contact email on file.");
       return;
     }
 
+    const isOffer = type === "offer";
+
     const subject = encodeURIComponent(
-      `Job Offer: ${job.jobTitle} at ${job.jobCompany}`,
+      isOffer
+        ? `Job Offer: ${job.jobTitle} at ${job.jobCompany}`
+        : `Interview Invitation: ${job.jobTitle} at ${job.jobCompany}`,
     );
+
     const body = encodeURIComponent(
-      `Hi ${applicant.name},\n\n` +
-        `Congratulations! We are pleased to offer you the position of ${job.jobTitle} at ${job.jobCompany} (${job.jobMode} · ${job.jobType}).\n\n` +
-        `Salary: ₱${Number(job.salary || 0).toLocaleString()}\n\n` +
-        `Please reply to this email to confirm your acceptance and discuss next steps.\n\n` +
-        `Best regards,\n${user.username}\n${job.jobCompany}`,
+      isOffer
+        ? `Hi ${applicant.name},\n\n` +
+            `Congratulations! We are pleased to offer you the position of ${job.jobTitle} at ${job.jobCompany} (${job.jobMode} · ${job.jobType}).\n\n` +
+            `Salary: ₱${Number(job.salary || 0).toLocaleString()}\n\n` +
+            `Please reply to this email to confirm your acceptance and discuss next steps.\n\n` +
+            `Best regards,\n${user.username}\n${job.jobCompany}`
+        : `Hi ${applicant.name},\n\n` +
+            `Thank you for applying for the ${job.jobTitle} position at ${job.jobCompany} (${job.jobMode} · ${job.jobType}).\n\n` +
+            `We reviewed your application and would like to invite you for an interview. Please reply to this email with your available dates and times this week.\n\n` +
+            `Best regards,\n${user.username}\n${job.jobCompany}`,
     );
 
     const mailtoUrl = `mailto:${contactEmail}?subject=${subject}&body=${body}`;
@@ -155,7 +180,7 @@ export default function ApplicantDetails() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
       >
-        {/* ApplyCard-style Applicant Summary Card */}
+        {/* Top Applicant Summary Card */}
         <View style={styles.card}>
           <View style={styles.wrapper}>
             <View style={styles.imageContainer}>
@@ -198,6 +223,12 @@ export default function ApplicantDetails() {
 
           <View style={styles.buttonContainer}>
             <PrimaryButton
+              title={showFullProfile ? "Hide Profile" : "View Profile"}
+              variant="inactive"
+              style={styles.compactButton}
+              onPress={() => setShowFullProfile((prev) => !prev)}
+            />
+            <PrimaryButton
               title="View Job"
               style={styles.compactButton}
               onPress={() => router.push(`/jobDetails/${job.id}`)}
@@ -205,7 +236,94 @@ export default function ApplicantDetails() {
           </View>
         </View>
 
-        {/* Status Card */}
+        {/* Expandable Leader-Style Profile Tabs (Education, Job Experience, Licenses & Cert) */}
+        {showFullProfile && (
+          <View style={styles.sectionCard}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.tabRow}
+            >
+              {profileTabs.map((tab) => (
+                <PrimaryButton
+                  key={tab}
+                  title={tab}
+                  variant={selectedProfileTab === tab ? "active" : "inactive"}
+                  onPress={() => setSelectedProfileTab(tab)}
+                  style={styles.tabButton}
+                />
+              ))}
+            </ScrollView>
+
+            {selectedProfileTab === "Education" && (
+              <View style={styles.detailRow}>
+                <BookOpen size={16} color={theme.colors.primary} />
+                <Text style={styles.detailText}>
+                  {education || "No education added."}
+                </Text>
+              </View>
+            )}
+
+            {selectedProfileTab === "Job Experience" && (
+              <View style={styles.detailRow}>
+                <Briefcase size={16} color={theme.colors.primary} />
+                <Text style={styles.detailText}>
+                  {experience || "No job experience added."}
+                </Text>
+              </View>
+            )}
+
+            {selectedProfileTab === "Licenses & Cert" && (
+              <View style={styles.detailRow}>
+                <Award size={16} color={theme.colors.primary} />
+                <Text style={styles.detailText}>
+                  {certifications || "No licenses or certifications added."}
+                </Text>
+              </View>
+            )}
+
+            <View style={styles.divider} />
+
+            {contactEmail ? (
+              <View style={styles.detailRow}>
+                <Mail size={16} color={theme.fontColor.secondary} />
+                <Text style={styles.detailText}>{contactEmail}</Text>
+              </View>
+            ) : null}
+            {contactPhone ? (
+              <View style={styles.detailRow}>
+                <Phone size={16} color={theme.fontColor.secondary} />
+                <Text style={styles.detailText}>{contactPhone}</Text>
+              </View>
+            ) : null}
+
+            {skills.length > 0 ? (
+              <>
+                <View style={styles.skillsHeader}>
+                  <Sparkles size={16} color={theme.colors.primary} />
+                  <Text style={styles.sectionTitle}>Skills</Text>
+                </View>
+                <View style={styles.skillsWrap}>
+                  {skills.map((skill) => (
+                    <View key={skill} style={styles.skillPill}>
+                      <Text style={styles.skillText}>{skill}</Text>
+                    </View>
+                  ))}
+                </View>
+              </>
+            ) : null}
+          </View>
+        )}
+
+        {/* Cover Letter */}
+        {coverLetterText ? (
+          <View style={styles.sectionCard}>
+            <Text style={styles.sectionTitle}>Cover Letter</Text>
+            <Text style={styles.bodyText}>{coverLetterText}</Text>
+          </View>
+        ) : null}
+
+        {/* Application Status Card */}
         <View style={styles.sectionCard}>
           <View style={styles.statusRow}>
             <View style={styles.statusTextContainer}>
@@ -216,79 +334,53 @@ export default function ApplicantDetails() {
           </View>
         </View>
 
-        {/* Cover Letter */}
-        {application.coverLetter ? (
-          <View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Cover Letter</Text>
-            <Text style={styles.bodyText}>{application.coverLetter}</Text>
-          </View>
-        ) : null}
-
-        {/* Contact & Background */}
-        <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Contact & Background</Text>
-          {contactEmail ? (
-            <View style={styles.detailRow}>
-              <Mail size={16} color={theme.fontColor.secondary} />
-              <Text style={styles.detailText}>{contactEmail}</Text>
-            </View>
-          ) : null}
-          {contactPhone ? (
-            <View style={styles.detailRow}>
-              <Phone size={16} color={theme.fontColor.secondary} />
-              <Text style={styles.detailText}>{contactPhone}</Text>
-            </View>
-          ) : null}
-          {education ? (
-            <View style={styles.detailRow}>
-              <BookOpen size={16} color={theme.fontColor.secondary} />
-              <Text style={styles.detailText}>{education}</Text>
-            </View>
-          ) : null}
-          {experience ? (
-            <View style={styles.detailRow}>
-              <Briefcase size={16} color={theme.fontColor.secondary} />
-              <Text style={styles.detailText}>{experience}</Text>
-            </View>
-          ) : null}
-        </View>
-
-        {/* Skills */}
-        {skills.length > 0 ? (
-          <View style={styles.sectionCard}>
-            <View style={styles.skillsHeader}>
-              <Sparkles size={16} color={theme.colors.primary} />
-              <Text style={styles.sectionTitle}>Skills</Text>
-            </View>
-            <View style={styles.skillsWrap}>
-              {skills.map((skill) => (
-                <View key={skill} style={styles.skillPill}>
-                  <Text style={styles.skillText}>{skill}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        ) : null}
-
-        {/* Home-style Filter Pill Buttons for Status */}
-        <View style={styles.actions}>
-          {["Pending", "Accepted", "Declined", "Completed"].map(
-            (nextStatus) => (
+        {/* Step 1: Pending -> Accept / Decline + Email for Interview */}
+        {status === "Pending" && (
+          <>
+            <View style={styles.twoButtonRow}>
               <PrimaryButton
-                key={nextStatus}
-                title={nextStatus}
-                variant={status === nextStatus ? "active" : "inactive"}
-                onPress={() => updateStatus(nextStatus)}
-                style={styles.pillButton}
+                title="Accept"
+                variant="active"
+                onPress={() => updateStatus("Accepted")}
+                style={styles.halfButton}
               />
-            ),
-          )}
-        </View>
+              <PrimaryButton
+                title="Decline"
+                variant="inactive"
+                onPress={() => updateStatus("Declined")}
+                style={styles.halfButton}
+              />
+            </View>
 
+            <PrimaryButton
+              title="Invite to Interview via Gmail"
+              variant="inactive"
+              onPress={() => openApplicantEmail("interview")}
+            />
+          </>
+        )}
+
+        {/* Step 2: Accepted -> Send Job Offer + Completed */}
         {status === "Accepted" && (
+          <>
+            <PrimaryButton
+              title="Send Job Offer via Gmail"
+              onPress={() => openApplicantEmail("offer")}
+            />
+            <PrimaryButton
+              title="Completed"
+              variant="inactive"
+              onPress={() => updateStatus("Completed")}
+            />
+          </>
+        )}
+
+        {/* Step 2b: Declined -> Completed */}
+        {status === "Declined" && (
           <PrimaryButton
-            title="Send Job Offer via Gmail"
-            onPress={sendJobOfferEmail}
+            title="Completed"
+            variant="inactive"
+            onPress={() => updateStatus("Completed")}
           />
         )}
 
@@ -422,21 +514,37 @@ const styles = StyleSheet.create({
     fontWeight: theme.fontWeight.muted,
   },
   buttonContainer: {
-    paddingHorizontal: 8,
-    paddingBottom: 8,
-    alignItems: "flex-end",
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: theme.spacing.small,
+    paddingHorizontal: 10,
+    paddingBottom: 10,
   },
   compactButton: {
-    width: 90,
-    height: 28,
-    paddingVertical: 4,
+    width: 105,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
   },
   sectionCard: {
     padding: 14,
     borderRadius: theme.radius.large,
     backgroundColor: theme.colors.cardBackground,
     boxShadow: theme.boxShadow.default,
-    gap: 8,
+    gap: 10,
+  },
+  tabRow: {
+    gap: theme.spacing.small,
+  },
+  tabButton: {
+    width: "auto",
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 17,
+    borderColor: theme.colors.border,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: theme.colors.mutedBackground,
   },
   statusRow: {
     flexDirection: "row",
@@ -470,7 +578,7 @@ const styles = StyleSheet.create({
   detailRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
+    gap: 8,
   },
   detailText: {
     flex: 1,
@@ -488,8 +596,8 @@ const styles = StyleSheet.create({
     gap: theme.spacing.small,
   },
   skillPill: {
-    height: 32,
     paddingHorizontal: 14,
+    paddingVertical: 6,
     borderRadius: 17,
     backgroundColor: theme.colors.mutedBackground,
     borderWidth: 1,
@@ -501,17 +609,12 @@ const styles = StyleSheet.create({
     fontSize: theme.fontSize.small,
     color: theme.fontColor.primary,
   },
-  actions: {
+  twoButtonRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
     gap: theme.spacing.small,
   },
-  pillButton: {
-    flexGrow: 1,
-    flexBasis: "45%",
-    height: 36,
-    borderRadius: 17,
-    borderColor: theme.colors.border,
+  halfButton: {
+    flex: 1,
   },
   errorText: {
     color: theme.actions.deletePrimary,

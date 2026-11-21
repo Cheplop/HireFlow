@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import { Bell, Menu, Search, Users } from "lucide-react-native";
+import { Menu, Search, Users } from "lucide-react-native";
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -174,62 +174,46 @@ export default function ApplicantManagementScreen() {
 
   return (
     <SafeAreaView style={styles.safeAreaView} edges={["top"]}>
-      {/* Home-style Search + Notification Bell + Triple-line Menu */}
-      <View style={styles.headerContainer}>
-        <View style={styles.search}>
-          <AuthInput
-            placeholder="Search applicants..."
-            value={search}
-            onChangeText={setSearch}
-            autoCapitalize="none"
-            icon={<Search size={20} color="#abb0b7" />}
-          />
-        </View>
+      {/* Pill Search Input + Single Triple-Line Menu Button */}
+      <View style={styles.searchRow}>
+        <AuthInput
+          placeholder="Search keywords here..."
+          value={search}
+          onChangeText={setSearch}
+          autoCapitalize="none"
+          style={styles.searchInput}
+          inputStyle={styles.searchInputField}
+          rightIcon={<Search size={18} color={theme.fontColor.primary} />}
+        />
 
         <Pressable
-          accessibilityLabel="View notifications"
           accessibilityRole="button"
-          onPress={() => router.push("/notifications")}
-          style={styles.circleButton}
-        >
-          <Bell size={20} color={theme.fontColor.primary} />
-          {unreadCount > 0 && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>
-                {unreadCount > 9 ? "9+" : unreadCount}
-              </Text>
-            </View>
-          )}
-        </Pressable>
-
-        <Pressable
           accessibilityLabel="Open menu"
-          accessibilityRole="button"
+          style={styles.menuButton}
           onPress={() => setIsMenuVisible(true)}
-          style={styles.circleButton}
         >
-          <Menu size={20} color={theme.fontColor.primary} />
+          <Menu size={18} color={theme.fontColor.primary} />
+          {unreadCount > 0 && <View style={styles.unreadDot} />}
         </Pressable>
       </View>
 
-      {/* Home-style Job Type Filters */}
-      <View style={styles.filterWrapper}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.worktypeContainer}
-        >
-          {jobModes.map((mode) => (
-            <PrimaryButton
-              key={mode}
-              title={mode}
-              variant={selectedJobMode === mode ? "active" : "inactive"}
-              onPress={() => setSelectedJobMode(mode)}
-              style={styles.filterButton}
-            />
-          ))}
-        </ScrollView>
-      </View>
+      {/* Job Type Filters */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.filterScroll}
+        contentContainerStyle={styles.filters}
+      >
+        {jobModes.map((mode) => (
+          <PrimaryButton
+            key={mode}
+            title={mode}
+            variant={selectedJobMode === mode ? "active" : "inactive"}
+            onPress={() => setSelectedJobMode(mode)}
+            style={styles.filterButton}
+          />
+        ))}
+      </ScrollView>
 
       {/* Applicant List */}
       <FlatList
@@ -302,59 +286,70 @@ const styles = StyleSheet.create({
   safeAreaView: {
     flex: 1,
     backgroundColor: theme.colors.background,
+    paddingHorizontal: 20,
   },
-  headerContainer: {
+  searchRow: {
     flexDirection: "row",
-    alignItems: "flex-start",
-    gap: theme.spacing.small,
-    width: "100%",
-    paddingHorizontal: 22,
+    alignItems: "center",
+    gap: 10,
+    marginTop: 12,
+    marginBottom: theme.spacing.medium,
   },
-  search: {
+  searchInput: {
     flex: 1,
-    height: 55,
+    marginBottom: 0,
   },
-  circleButton: {
-    alignItems: "center",
-    justifyContent: "center",
-    width: 48,
-    height: 48,
-    padding: 0,
-    marginTop: 1,
-    backgroundColor: theme.colors.cardBackground,
-    borderColor: theme.colors.border,
+  searchInputField: {
+    height: 44,
+    paddingVertical: 0,
+    paddingRight: 42,
     borderWidth: 1,
-    borderRadius: theme.radius.large,
+    borderColor: theme.colors.border,
+    borderRadius: 22,
+    backgroundColor: theme.colors.cardBackground,
+    fontSize: theme.fontSize.xsmall,
+    shadowColor: theme.colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
   },
-  badge: {
-    position: "absolute",
-    top: 6,
-    right: 6,
-    minWidth: 16,
-    height: 16,
-    paddingHorizontal: 4,
-    borderRadius: 8,
-    backgroundColor: "#B3261E",
+  menuButton: {
+    width: 44,
+    height: 44,
     alignItems: "center",
     justifyContent: "center",
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: 22,
+    backgroundColor: theme.colors.cardBackground,
+    shadowColor: theme.colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
   },
-  badgeText: {
-    color: "#FFFFFF",
-    fontSize: 10,
-    fontWeight: "700",
+  unreadDot: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#B3261E",
   },
-  filterWrapper: {
-    marginTop: theme.spacing.small,
+  filterScroll: {
+    flexGrow: 0,
+    flexShrink: 0,
   },
-  worktypeContainer: {
-    gap: theme.spacing.small,
-    paddingHorizontal: 22,
-    paddingBottom: theme.spacing.small,
+  filters: {
+    gap: 8,
+    paddingBottom: theme.spacing.medium,
   },
   filterButton: {
     width: "auto",
-    minWidth: 78,
-    height: 36,
+    minWidth: 84,
+    height: 34,
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 17,
@@ -365,8 +360,8 @@ const styles = StyleSheet.create({
   },
   cards: {
     gap: 12,
-    paddingBottom: 130,
-    paddingHorizontal: 22,
+    paddingBottom: 110,
+    paddingHorizontal: 2,
     paddingTop: 2,
     flexGrow: 1,
   },
