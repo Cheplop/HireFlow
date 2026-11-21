@@ -1,5 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {
+  Bell,
   BookOpen,
   Briefcase,
   ChevronLeft,
@@ -24,6 +25,7 @@ import StatusCard from "@/components/common/StatusCard";
 import { useApplications } from "../../contexts/ApplicationsContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { useJobs } from "../../contexts/JobsContext";
+import { useNotifications } from "../../contexts/NotificationsContext";
 import { getApplicantStarterProfile } from "../../data/profileStorage";
 import theme from "../../styles/theme";
 
@@ -33,6 +35,8 @@ export default function ApplicantDetails() {
   const { user } = useAuth();
   const { getApplicationById, setApplicationStatus } = useApplications();
   const { getJobById } = useJobs();
+  const { getUnreadCount } = useNotifications();
+  const unreadCount = user ? getUnreadCount(user.id) : 0;
   const application = getApplicationById(id);
   const applicant = application?.applicant;
   const job = application && getJobById(application.jobId);
@@ -51,8 +55,11 @@ export default function ApplicantDetails() {
     (requestedJobId && Number(requestedJobId) !== job.id)
   ) {
     return (
-      <SafeAreaView style={styles.safeAreaView}>
-        <Text style={styles.heading}>Applicant not found</Text>
+      <SafeAreaView style={styles.safeAreaView} edges={["top"]}>
+        <View style={styles.notFound}>
+          <Text style={styles.emptyState}>Applicant not found.</Text>
+          <PrimaryButton title="GO BACK" onPress={() => router.back()} />
+        </View>
       </SafeAreaView>
     );
   }
@@ -112,92 +119,150 @@ export default function ApplicantDetails() {
   }
 
   return (
-    <SafeAreaView style={styles.safeAreaView}>
-      <View style={styles.header}>
+    <SafeAreaView style={styles.safeAreaView} edges={["top"]}>
+      <View style={styles.headerContainer}>
         <Pressable
           accessibilityLabel="Go back"
           accessibilityRole="button"
           onPress={() => router.back()}
-          style={styles.backButton}
+          style={styles.circleButton}
         >
           <ChevronLeft size={22} color={theme.fontColor.primary} />
         </Pressable>
+
         <Text style={styles.heading} numberOfLines={1}>
           Applicant Details
         </Text>
+
+        <Pressable
+          accessibilityLabel="View notifications"
+          accessibilityRole="button"
+          onPress={() => router.push("/notifications")}
+          style={styles.circleButton}
+        >
+          <Bell size={20} color={theme.fontColor.primary} />
+          {unreadCount > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </Text>
+            </View>
+          )}
+        </Pressable>
       </View>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
       >
-        <View style={styles.profileCard}>
-          <Image
-            source={applicant.avatar}
-            style={styles.avatar}
-            resizeMode="cover"
-          />
-          <Text style={styles.name}>{applicant.name}</Text>
-          {about ? <Text style={styles.about}>{about}</Text> : null}
-          <PrimaryButton
-            title="View job listing"
-            variant="inactive"
-            onPress={() => router.push(`/jobDetails/${job.id}`)}
-            style={styles.jobButton}
-          />
-        </View>
+        {/* ApplyCard-style Applicant Summary Card */}
+        <View style={styles.card}>
+          <View style={styles.wrapper}>
+            <View style={styles.imageContainer}>
+              <Image
+                source={applicant.avatar}
+                style={styles.avatar}
+                resizeMode="cover"
+              />
+            </View>
 
-        <View style={styles.statusRow}>
-          <View style={styles.statusTextContainer}>
-            <Text style={styles.statusLabel}>Application status</Text>
-            <Text style={styles.statusJob}>{status}</Text>
+            <View style={styles.cardContent}>
+              <Text style={styles.cardTitle}>{applicant.name}</Text>
+              <Text style={styles.cardCompany}>{job.jobTitle}</Text>
+
+              {education ? (
+                <View style={styles.metaRow}>
+                  <BookOpen size={14} color={theme.fontColor.secondary} />
+                  <Text style={styles.metaText} numberOfLines={1}>
+                    {education}
+                  </Text>
+                </View>
+              ) : null}
+
+              {experience ? (
+                <View style={styles.metaRow}>
+                  <Briefcase size={14} color={theme.fontColor.secondary} />
+                  <Text style={styles.metaText} numberOfLines={1}>
+                    {experience}
+                  </Text>
+                </View>
+              ) : null}
+
+              {about ? (
+                <Text style={styles.cardDescription} numberOfLines={2}>
+                  {about}
+                </Text>
+              ) : null}
+            </View>
           </View>
-          <StatusCard status={status} />
+
+          <View style={styles.buttonContainer}>
+            <PrimaryButton
+              title="View Job"
+              style={styles.compactButton}
+              onPress={() => router.push(`/jobDetails/${job.id}`)}
+            />
+          </View>
         </View>
 
+        {/* Status Card */}
+        <View style={styles.sectionCard}>
+          <View style={styles.statusRow}>
+            <View style={styles.statusTextContainer}>
+              <Text style={styles.statusLabel}>Application status</Text>
+              <Text style={styles.statusValue}>{status}</Text>
+            </View>
+            <StatusCard status={status} />
+          </View>
+        </View>
+
+        {/* Cover Letter */}
         {application.coverLetter ? (
-          <View style={styles.applicationInfo}>
+          <View style={styles.sectionCard}>
             <Text style={styles.sectionTitle}>Cover Letter</Text>
-            <Text style={styles.coverLetter}>{application.coverLetter}</Text>
+            <Text style={styles.bodyText}>{application.coverLetter}</Text>
           </View>
         ) : null}
 
-        <View style={styles.detailCard}>
+        {/* Contact & Background */}
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Contact & Background</Text>
           {contactEmail ? (
             <View style={styles.detailRow}>
-              <Mail size={18} color={theme.fontColor.secondary} />
+              <Mail size={16} color={theme.fontColor.secondary} />
               <Text style={styles.detailText}>{contactEmail}</Text>
             </View>
           ) : null}
           {contactPhone ? (
             <View style={styles.detailRow}>
-              <Phone size={18} color={theme.fontColor.secondary} />
+              <Phone size={16} color={theme.fontColor.secondary} />
               <Text style={styles.detailText}>{contactPhone}</Text>
             </View>
           ) : null}
           {education ? (
             <View style={styles.detailRow}>
-              <BookOpen size={18} color={theme.fontColor.secondary} />
+              <BookOpen size={16} color={theme.fontColor.secondary} />
               <Text style={styles.detailText}>{education}</Text>
             </View>
           ) : null}
           {experience ? (
             <View style={styles.detailRow}>
-              <Briefcase size={18} color={theme.fontColor.secondary} />
+              <Briefcase size={16} color={theme.fontColor.secondary} />
               <Text style={styles.detailText}>{experience}</Text>
             </View>
           ) : null}
         </View>
 
+        {/* Skills */}
         {skills.length > 0 ? (
-          <View style={styles.detailCard}>
+          <View style={styles.sectionCard}>
             <View style={styles.skillsHeader}>
-              <Sparkles size={18} color={theme.fontColor.secondary} />
-              <Text style={styles.sectionHeading}>Skills</Text>
+              <Sparkles size={16} color={theme.colors.primary} />
+              <Text style={styles.sectionTitle}>Skills</Text>
             </View>
             <View style={styles.skillsWrap}>
               {skills.map((skill) => (
-                <View key={skill} style={styles.skillBadge}>
+                <View key={skill} style={styles.skillPill}>
                   <Text style={styles.skillText}>{skill}</Text>
                 </View>
               ))}
@@ -205,6 +270,7 @@ export default function ApplicantDetails() {
           </View>
         ) : null}
 
+        {/* Home-style Filter Pill Buttons for Status */}
         <View style={styles.actions}>
           {["Pending", "Accepted", "Declined", "Completed"].map(
             (nextStatus) => (
@@ -213,7 +279,7 @@ export default function ApplicantDetails() {
                 title={nextStatus}
                 variant={status === nextStatus ? "active" : "inactive"}
                 onPress={() => updateStatus(nextStatus)}
-                style={styles.actionButton}
+                style={styles.pillButton}
               />
             ),
           )}
@@ -236,155 +302,220 @@ const styles = StyleSheet.create({
   safeAreaView: {
     flex: 1,
     backgroundColor: theme.colors.background,
-    paddingHorizontal: 22,
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: theme.spacing.medium,
-    marginTop: theme.spacing.small,
-    marginBottom: theme.spacing.medium,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 20,
-    backgroundColor: theme.colors.cardBackground,
-  },
-  heading: {
-    color: theme.fontColor.primary,
-    fontSize: 22,
-    fontWeight: "700",
+  notFound: {
     flex: 1,
-  },
-  content: {
-    paddingBottom: 110,
+    justifyContent: "center",
+    paddingHorizontal: 22,
     gap: theme.spacing.medium,
   },
-  profileCard: {
-    padding: theme.spacing.medium,
-    borderRadius: theme.radius.large,
-    alignItems: "center",
-    backgroundColor: theme.colors.cardBackground,
-    boxShadow: theme.boxShadow.default,
-    gap: 6,
-  },
-  avatar: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    marginBottom: theme.spacing.small,
-  },
-  name: {
-    fontSize: theme.fontSize.large,
-    fontWeight: "bold",
-    color: theme.fontColor.primary,
-  },
-  about: {
-    fontSize: theme.fontSize.small,
+  emptyState: {
     color: theme.fontColor.secondary,
     textAlign: "center",
-    lineHeight: 19,
+    padding: theme.spacing.large,
   },
-  jobButton: {
-    marginTop: 8,
+  headerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: theme.spacing.small,
+    paddingHorizontal: 22,
+    paddingVertical: theme.spacing.small,
   },
-  applicationInfo: {
-    gap: 8,
-    padding: theme.spacing.medium,
-    borderRadius: theme.radius.large,
+  circleButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    width: 48,
+    height: 48,
     backgroundColor: theme.colors.cardBackground,
+    borderColor: theme.colors.border,
+    borderWidth: 1,
+    borderRadius: theme.radius.large,
   },
-  sectionTitle: {
-    color: theme.fontColor.primary,
-    fontSize: theme.fontSize.medium,
+  badge: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    minWidth: 16,
+    height: 16,
+    paddingHorizontal: 4,
+    borderRadius: 8,
+    backgroundColor: "#B3261E",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  badgeText: {
+    color: "#FFFFFF",
+    fontSize: 10,
     fontWeight: "700",
   },
-  coverLetter: {
+  heading: {
+    flex: 1,
     color: theme.fontColor.primary,
+    fontSize: theme.fontSize.large,
+    fontWeight: "700",
+    marginLeft: 4,
+  },
+  content: {
+    paddingHorizontal: 22,
+    paddingTop: 2,
+    paddingBottom: 130,
+    gap: 12,
+  },
+  card: {
+    flexDirection: "column",
+    alignSelf: "stretch",
+    backgroundColor: theme.colors.cardBackground,
+    borderRadius: theme.radius.large,
+    boxShadow: theme.boxShadow.default,
+  },
+  wrapper: {
+    flexDirection: "row",
+    gap: theme.spacing.medium,
+    padding: 10,
+    backgroundColor: theme.colors.cardBackground,
+    borderRadius: theme.radius.large,
+  },
+  imageContainer: {
+    backgroundColor: theme.colors.cardBackground,
+    width: 64,
+    height: 64,
+    borderRadius: 12,
+    boxShadow: theme.boxShadow.default,
+    justifyContent: "center",
+    alignItems: "center",
+    overflow: "hidden",
+  },
+  avatar: {
+    width: 64,
+    height: 64,
+  },
+  cardContent: {
+    flex: 1,
+    alignSelf: "flex-start",
+  },
+  cardTitle: {
+    fontSize: theme.fontSize.medium,
+    fontWeight: "bold",
+    color: theme.fontColor.primary,
+    marginBottom: 2,
+  },
+  cardCompany: {
     fontSize: theme.fontSize.small,
-    lineHeight: 20,
+    color: theme.fontColor.primary,
+    marginBottom: 5,
+  },
+  metaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    marginBottom: 4,
+  },
+  metaText: {
+    flex: 1,
+    fontSize: theme.fontSize.small,
+    color: theme.fontColor.secondary,
+  },
+  cardDescription: {
+    fontSize: 11,
+    lineHeight: 15,
+    color: theme.fontColor.secondary,
+    fontWeight: theme.fontWeight.muted,
+  },
+  buttonContainer: {
+    paddingHorizontal: 8,
+    paddingBottom: 8,
+    alignItems: "flex-end",
+  },
+  compactButton: {
+    width: 90,
+    height: 28,
+    paddingVertical: 4,
+  },
+  sectionCard: {
+    padding: 14,
+    borderRadius: theme.radius.large,
+    backgroundColor: theme.colors.cardBackground,
+    boxShadow: theme.boxShadow.default,
+    gap: 8,
   },
   statusRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     gap: theme.spacing.small,
-    padding: theme.spacing.medium,
-    borderRadius: theme.radius.large,
-    backgroundColor: theme.colors.cardBackground,
   },
   statusTextContainer: {
     flex: 1,
-    gap: 3,
+    gap: 2,
   },
   statusLabel: {
     color: theme.fontColor.secondary,
     fontSize: theme.fontSize.small,
   },
-  statusJob: {
+  statusValue: {
     color: theme.fontColor.primary,
     fontSize: theme.fontSize.medium,
-    fontWeight: "700",
+    fontWeight: "bold",
   },
-  detailCard: {
-    padding: theme.spacing.medium,
-    borderRadius: theme.radius.large,
-    backgroundColor: theme.colors.cardBackground,
-    boxShadow: theme.boxShadow.default,
-    gap: theme.spacing.small,
+  sectionTitle: {
+    color: theme.fontColor.primary,
+    fontSize: theme.fontSize.medium,
+    fontWeight: "bold",
+  },
+  bodyText: {
+    color: theme.fontColor.secondary,
+    fontSize: theme.fontSize.small,
+    lineHeight: 19,
   },
   detailRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: theme.spacing.small,
+    gap: 6,
   },
   detailText: {
     flex: 1,
     fontSize: theme.fontSize.small,
-    color: theme.fontColor.primary,
-    lineHeight: 19,
+    color: theme.fontColor.secondary,
   },
   skillsHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-  },
-  sectionHeading: {
-    fontSize: theme.fontSize.medium,
-    fontWeight: "700",
-    color: theme.fontColor.primary,
+    gap: 6,
   },
   skillsWrap: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: theme.spacing.small,
   },
-  skillBadge: {
-    backgroundColor: theme.colors.background,
-    borderRadius: theme.radius.large,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderColor: theme.colors.border,
+  skillPill: {
+    height: 32,
+    paddingHorizontal: 14,
+    borderRadius: 17,
+    backgroundColor: theme.colors.mutedBackground,
     borderWidth: 1,
+    borderColor: theme.colors.border,
+    justifyContent: "center",
+    alignItems: "center",
   },
   skillText: {
-    fontSize: 12,
+    fontSize: theme.fontSize.small,
     color: theme.fontColor.primary,
   },
   actions: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: theme.spacing.medium,
+    gap: theme.spacing.small,
   },
-  actionButton: {
+  pillButton: {
     flexGrow: 1,
-    flexBasis: "40%",
+    flexBasis: "45%",
+    height: 36,
+    borderRadius: 17,
+    borderColor: theme.colors.border,
   },
   errorText: {
-    color: "#B3261E",
+    color: theme.actions.deletePrimary,
     fontSize: theme.fontSize.small,
+    textAlign: "center",
   },
 });

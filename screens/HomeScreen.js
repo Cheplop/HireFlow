@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
   },
   jobList: {
     flex: 1,
-  },
+  },  
   cards: {
     gap: 12,
     paddingBottom: 130,
