@@ -1,122 +1,253 @@
-import { Search, Users } from "lucide-react-native";
-import { useMemo, useState } from "react";
-import { FlatList, ScrollView, StyleSheet, Text, View } from "react-native";
+import { LogOut, Users } from "lucide-react-native";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Alert,
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import ApplicantCard from "@/components/employer/ApplicantCard";
-import { AuthInput } from "@/components/common/AuthInput";
 import { PrimaryButton } from "@/components/common/PrimaryButton";
+import SearchRow from "@/components/common/SearchRow";
 import { useAuth } from "../contexts/AuthContext";
 import { useApplicants } from "../contexts/ApplicantsContext";
 import { useJobs } from "../contexts/JobsContext";
+import { PHOTO_STORAGE_KEY } from "../data/ProfileScreen.data";
 import theme from "../styles/theme";
 
-const statusFilters = ["All", "Pending", "Accepted", "Declined", "Completed"];
+const jobModes = ["All", "Full-time", "Part-time", "Contractual"];
 
 export default function ApplicantManagementScreen() {
   const [search, setSearch] = useState("");
-  const [selectedJobId, setSelectedJobId] = useState(null);
-  const [selectedStatus, setSelectedStatus] = useState("All");
-  const { user } = useAuth();
+  const [selectedJobMode, setSelectedJobMode] = useState(jobModes[0]);
+  const [profilePhotos, setProfilePhotos] = useState({});
+  const [photoLoadError, setPhotoLoadError] = useState("");
+
+  const { user, logout } = useAuth();
+  const router = useRouter();
   const { getJobsForEmployer } = useJobs();
-  const employerJobs = getJobsForEmployer(user.id);
-  const { getApplicantsByJob } = useApplicants();
-  const activeJobId = employerJobs.some((job) => job.id === selectedJobId)
-    ? selectedJobId
-    : employerJobs[0]?.id;
+  const employerJobs = user?.id ? getJobsForEmployer(user.id) : [];
+  const {
+    getApplicantsByJob,
+    hasLoadedApplications,
+    loadError,
+    saveError,
+  } = useApplicants();
+
+  const applications = useMemo(
+    () =>
+      employerJobs.flatMap((job) =>
+        getApplicantsByJob(job.id, user.id).map((applicant) => ({
+          ...applicant,
+          jobTitle: job.jobTitle,
+          jobMode: job.jobMode,
+        })),
+      ),
+    [employerJobs, getApplicantsByJob, user?.id],
+  );
 
   const filteredApplicants = useMemo(() => {
     const query = search.trim().toLowerCase();
 
-    if (!activeJobId) return [];
+    return applications.filter((applicant) => {
+      const matchesMode =
+        selectedJobMode === "All" || applicant.jobMode === selectedJobMode;
 
-    return getApplicantsByJob(activeJobId, user.id).filter((applicant) => {
-      const status = applicant.status;
-      const matchesStatus =
-        selectedStatus === "All" || status === selectedStatus;
-      const matchesSearch = applicant.name.toLowerCase().includes(query);
-      return matchesStatus && matchesSearch;
+      const matchesSearch = [
+        applicant.name,
+        applicant.jobTitle,
+        applicant.education,
+      ].some((value) =>
+        String(value ?? "").toLowerCase().includes(query),
+      );
+
+      return matchesMode && matchesSearch;
     });
-  }, [activeJobId, getApplicantsByJob, selectedStatus, search, user.id]);
+  }, [applications, search, selectedJobMode]);
 
-  const selectedJob = employerJobs.find((job) => job.id === activeJobId);
+  useEffect(() => {
+    if (!hasLoadedApplications) return undefined;
+    let active = true;
+    const employeeIds = [...new Set(
+      applications.map((applicant) => applicant.employeeId).filter(Boolean),
+    )];
+
+    if (!employeeIds.length) {
+      setProfilePhotos({});
+      setPhotoLoadError("");
+      return () => { active = false; };
+    }
+
+    async function loadPhotos() {
+      try {
+        const savedEntries = await AsyncStorage.multiGet(
+          employeeIds.map((id) => `${PHOTO_STORAGE_KEY}:${id}`),
+        );
+        if (!active) return;
+        const photos = {};
+        let hasInvalidPhotoData = false;
+        savedEntries.forEach(([key, value]) => {
+          if (!value) return;
+          try {
+            const avatarUri = JSON.parse(value)?.avatarUri;
+            const employeeId = key.slice(`${PHOTO_STORAGE_KEY}:`.length);
+            if (typeof avatarUri === "string") photos[employeeId] = { uri: avatarUri };
+          } catch {
+            hasInvalidPhotoData = true;
+          }
+        });
+        setProfilePhotos(photos);
+        setPhotoLoadError(
+          hasInvalidPhotoData ? "Some applicant profile photos could not be loaded." : "",
+        );
+      } catch (error) {
+        if (active) {
+          setPhotoLoadError(
+            error instanceof Error
+              ? `Applicant photos could not be loaded: ${error.message}`
+              : "Applicant photos could not be loaded.",
+          );
+        }
+      }
+    }
+
+    void loadPhotos();
+    return () => { active = false; };
+  }, [applications, hasLoadedApplications]);
+
+  const performLogout = async () => {
+    try {
+      await logout();
+      router.replace("/login");
+    } catch (logoutError) {
+      Alert.alert(
+        "Could not log out",
+        logoutError instanceof Error
+          ? logoutError.message
+          : "Please try again.",
+      );
+    }
+  };
+
+  const handleLogout = () => {
+    if (Platform.OS === "web") {
+      if (
+        typeof window !== "undefined" &&
+        !window.confirm("Are you sure you want to log out?")
+      ) {
+        return;
+      }
+
+      void performLogout();
+      return;
+    }
+
+    Alert.alert("Log out", "Are you sure you want to log out?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Log out",
+        style: "destructive",
+        onPress: () => void performLogout(),
+      },
+    ]);
+  };
 
   return (
-    <SafeAreaView style={styles.safeAreaView}>
-      <View style={styles.search}>
-        <AuthInput
-          placeholder="Search applicants..."
-          value={search}
-          onChangeText={setSearch}
-          autoCapitalize="none"
-          icon={<Search size={20} color="#abb0b7" />}
-        />
+    <SafeAreaView style={styles.safeAreaView} edges={["top"]}>
+      <SearchRow
+        placeholder="Search keywords here..."
+        value={search}
+        onChangeText={setSearch}
+        notificationLabel="Notifications"
+        onNotificationPress={() =>
+          Alert.alert("Notifications", "Notifications are not available yet.")
+        }
+      />
+
+      {/* Job Type Filters & Logout */}
+      <View style={styles.toolbarRow}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.filterScroll}
+          contentContainerStyle={styles.filters}
+        >
+          {jobModes.map((mode) => (
+            <PrimaryButton
+              key={mode}
+              title={mode}
+              variant={selectedJobMode === mode ? "active" : "inactive"}
+              onPress={() => setSelectedJobMode(mode)}
+              style={styles.filterButton}
+            />
+          ))}
+        </ScrollView>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Log out"
+          onPress={handleLogout}
+          style={({ pressed }) => [
+            styles.logoutButton,
+            pressed && styles.logoutButtonPressed,
+          ]}
+        >
+          <LogOut size={14} color={theme.actions?.deletePrimary ?? "#B3261E"} />
+          <Text style={styles.logoutText}>Log out</Text>
+        </Pressable>
       </View>
 
-      <Text style={styles.heading}>Applicant Management</Text>
-      <Text style={styles.subheading}>
-        Review and manage applications for your job postings.
-      </Text>
-
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.jobs}
-      >
-        {employerJobs.map((job) => (
-          <PrimaryButton
-            key={job.id}
-            title={job.jobTitle}
-            variant={activeJobId === job.id ? "active" : "inactive"}
-            onPress={() => setSelectedJobId(job.id)}
-            style={styles.jobButton}
-          />
-        ))}
-      </ScrollView>
-
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filters}
-      >
-        {statusFilters.map((status) => (
-          <PrimaryButton
-            key={status}
-            title={status}
-            variant={selectedStatus === status ? "active" : "inactive"}
-            onPress={() => setSelectedStatus(status)}
-            style={styles.filterButton}
-          />
-        ))}
-      </ScrollView>
-
-      <Text style={styles.sectionLabel}>
-        {selectedJob
-          ? `${filteredApplicants.length} applicant${filteredApplicants.length === 1 ? "" : "s"} — ${selectedJob.jobTitle}`
-          : "No jobs yet"}
-      </Text>
-
+      {/* Applicant List */}
       <FlatList
-        data={filteredApplicants}
+        data={hasLoadedApplications ? filteredApplicants : []}
+        style={styles.applicantList}
         contentContainerStyle={styles.cards}
         showsVerticalScrollIndicator={false}
+        keyExtractor={(item) => String(item.id)}
         renderItem={({ item }) => (
           <ApplicantCard
             applicant={item}
-            jobId={activeJobId}
+            jobId={item.jobId}
             status={item.status}
+            avatarSource={profilePhotos[item.employeeId] ?? item.avatar}
           />
         )}
-        keyExtractor={(item) => String(item.id)}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Users size={40} color={theme.fontColor.secondary} />
-            <Text style={styles.emptyTitle}>
-              {selectedJob ? "No applicants found" : "Publish a job to get started"}
+        ListHeaderComponent={
+          loadError || saveError || photoLoadError ? (
+            <Text style={styles.errorText}>
+              {[loadError, saveError, photoLoadError].filter(Boolean).join("\n")}
             </Text>
+          ) : null
+        }
+        ListEmptyComponent={
+          !hasLoadedApplications ? <View style={styles.emptyState}>
+            <ActivityIndicator color={theme.colors.primary} />
+            <Text style={styles.emptyText}>Loading applications…</Text>
+          </View> : <View style={styles.emptyState}>
+            <Users size={40} color={theme.fontColor.secondary} />
+
+            <Text style={styles.emptyTitle}>
+              {employerJobs.length
+                ? applications.length
+                  ? "No applications found"
+                  : "No applications yet"
+                : "No jobs yet"}
+            </Text>
+
             <Text style={styles.emptyText}>
-              {selectedJob
-                ? "Try a different status filter or search term."
+              {employerJobs.length
+                ? applications.length
+                  ? "Try another job type or search term."
+                  : "Applicants will appear here when they apply to your listings."
                 : "Applicants will appear here when they apply to your listings."}
             </Text>
           </View>
@@ -130,79 +261,93 @@ const styles = StyleSheet.create({
   safeAreaView: {
     flex: 1,
     backgroundColor: theme.colors.background,
-    paddingHorizontal: 22,
+    paddingHorizontal: 20,
   },
-  search: {
-    height: 55,
+
+  toolbarRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingBottom: theme.spacing.medium,
   },
-  heading: {
-    color: theme.fontColor.primary,
-    fontSize: 22,
-    fontWeight: "700",
-    marginTop: theme.spacing.small,
+
+  filterScroll: {
+    flex: 1,
+    flexGrow: 1,
+    flexShrink: 1,
   },
-  subheading: {
-    color: theme.fontColor.secondary,
-    fontSize: theme.fontSize.small,
-    lineHeight: 18,
-    marginTop: 4,
-    marginBottom: theme.spacing.medium,
-  },
-  jobs: {
-    gap: theme.spacing.small,
-    paddingBottom: theme.spacing.small,
-  },
-  jobButton: {
-    width: "auto",
-    minWidth: 110,
-    height: 36,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: theme.radius.large,
-    borderColor: theme.colors.border,
-  },
+
   filters: {
-    gap: theme.spacing.small,
-    paddingBottom: theme.spacing.small,
+    gap: 8,
   },
+
   filterButton: {
     width: "auto",
-    minWidth: 75,
-    height: 36,
-    paddingHorizontal: 12,
+    minWidth: 84,
+    height: 34,
+    paddingHorizontal: 14,
     paddingVertical: 6,
-    borderRadius: theme.radius.large,
+    borderRadius: 17,
     borderColor: theme.colors.border,
   },
-  sectionLabel: {
-    color: theme.fontColor.secondary,
-    fontSize: theme.fontSize.small,
-    marginTop: 4,
-    marginBottom: theme.spacing.small,
+
+  logoutButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 5,
+    height: 34,
+    paddingHorizontal: 12,
+    borderRadius: 17,
+    backgroundColor: theme.actions?.deleteBg ?? "#FDECEC",
+    flexShrink: 0,
   },
+
+  logoutButtonPressed: {
+    opacity: 0.85,
+  },
+
+  logoutText: {
+    color: theme.actions?.deletePrimary ?? "#B3261E",
+    fontSize: theme.fontSize.xsmall,
+    fontWeight: theme.fontWeight?.semibold ?? "600",
+  },
+
+  applicantList: {
+    flex: 1,
+  },
+
   cards: {
-    gap: theme.spacing.medium,
+    gap: 12,
     paddingBottom: 110,
     paddingHorizontal: 2,
-    paddingTop: theme.spacing.small,
+    paddingTop: 2,
     flexGrow: 1,
   },
+
   emptyState: {
     alignItems: "center",
     gap: theme.spacing.small,
     paddingHorizontal: theme.spacing.large,
-    paddingTop: 64,
+    paddingTop: 72,
   },
+
   emptyTitle: {
     color: theme.fontColor.primary,
     fontWeight: "700",
     fontSize: theme.fontSize.large,
     textAlign: "center",
   },
+
   emptyText: {
     color: theme.fontColor.secondary,
     fontSize: theme.fontSize.small,
     lineHeight: 19,
     textAlign: "center",
+  },
+  errorText: {
+    color: theme.actions?.deletePrimary ?? "#B3261E",
+    fontSize: theme.fontSize.small,
+    paddingVertical: theme.spacing.small,
   },
 });

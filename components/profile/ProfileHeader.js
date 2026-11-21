@@ -13,6 +13,7 @@ export default function ProfileHeader({
   profile,
   coverUri,
   avatarUri,
+  avatarSource,
   isEditing,
   onPhotoTarget,
   onMenuPress,
@@ -29,31 +30,29 @@ export default function ProfileHeader({
           />
         ) : null}
 
+        {onMenuPress ? (
+          <Pressable
+            style={styles.menuButton}
+            onPress={onMenuPress}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel="Open profile menu"
+          >
+            <Ionicons
+              name="menu"
+              size={22}
+              color={theme.fontColor.dark}
+            />
+          </Pressable>
+        ) : null}
+
         {isEditing && (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Edit cover photo"
-            style={styles.coverEditSurface}
+            style={styles.editBadge}
             onPress={() => onPhotoTarget('cover')}
-          />
-        )}
-
-        <Pressable
-          style={styles.menuButton}
-          onPress={onMenuPress}
-          hitSlop={10}
-          accessibilityRole="button"
-          accessibilityLabel="Open profile menu"
-        >
-          <Ionicons
-            name="menu"
-            size={22}
-            color={theme.fontColor.dark}
-            />
-        </Pressable>
-
-        {isEditing && (
-          <View style={styles.editBadge} pointerEvents="none">
+          >
             <Ionicons
               name="camera"
               size={12}
@@ -63,7 +62,7 @@ export default function ProfileHeader({
             <Text style={styles.editBadgeText}>
               Edit cover
             </Text>
-          </View>
+          </Pressable>
         )}
       </View>
 
@@ -71,10 +70,13 @@ export default function ProfileHeader({
         <Pressable
           style={styles.avatar}
           onPress={() => isEditing && onPhotoTarget('avatar')}
+          accessibilityRole="button"
+          accessibilityLabel="Edit profile photo"
+          accessibilityState={{ disabled: !isEditing }}
         >
-          {avatarUri ? (
+          {avatarUri || avatarSource ? (
             <Image
-              source={{ uri: avatarUri }}
+              source={avatarUri ? { uri: avatarUri } : avatarSource}
               style={styles.avatarImage}
             />
           ) : (
@@ -115,11 +117,6 @@ const styles = StyleSheet.create({
     height: '100%',
   },
 
-  coverEditSurface: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 1,
-  },
-
 menuButton: {
   position: 'absolute',
   top: 10,
@@ -137,6 +134,8 @@ menuButton: {
     position: 'absolute',
     bottom: 8,
     right: 8,
+    zIndex: 12,
+    elevation: 12,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,

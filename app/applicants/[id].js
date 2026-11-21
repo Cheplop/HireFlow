@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import {
   BookOpen,
   Briefcase,
+  ChevronLeft,
   Mail,
   Phone,
   Sparkles,
@@ -10,6 +11,7 @@ import { useState } from "react";
 import {
   Image,
   Linking,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -22,6 +24,7 @@ import StatusCard from "@/components/common/StatusCard";
 import { useApplications } from "../../contexts/ApplicationsContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { useJobs } from "../../contexts/JobsContext";
+import { getApplicantStarterProfile } from "../../data/profileStorage";
 import theme from "../../styles/theme";
 
 export default function ApplicantDetails() {
@@ -36,10 +39,13 @@ export default function ApplicantDetails() {
   const requestedJobId = Array.isArray(jobId) ? jobId[0] : jobId;
   const status = application?.status;
   const [error, setError] = useState("");
+  const [isUpdating, setIsUpdating] = useState(false);
+  const profileFallback = getApplicantStarterProfile(applicant);
 
   if (
     user?.role !== "employer" ||
     !applicant ||
+    !application.employeeId ||
     !job ||
     job.employerId !== user.id ||
     (requestedJobId && Number(requestedJobId) !== job.id)
@@ -51,17 +57,30 @@ export default function ApplicantDetails() {
     );
   }
 
-  function updateStatus(nextStatus) {
+  const contactEmail = applicant.contactEmail || profileFallback?.contactEmail;
+  const contactPhone = applicant.contactPhone || profileFallback?.contactPhone;
+  const education = applicant.education || profileFallback?.education;
+  const experience = applicant.experience || profileFallback?.experience;
+  const about = applicant.about || profileFallback?.about;
+  const skills = applicant.skills?.length
+    ? applicant.skills
+    : profileFallback?.skills || [];
+
+  async function updateStatus(nextStatus) {
+    if (isUpdating) return;
+    setError("");
+    setIsUpdating(true);
     try {
-      setApplicationStatus(application.id, user.id, nextStatus);
-      setError("");
+      await setApplicationStatus(application.id, user.id, nextStatus);
     } catch (updateError) {
       setError(updateError.message);
+    } finally {
+      setIsUpdating(false);
     }
   }
 
   async function sendJobOfferEmail() {
-    if (!applicant?.contactEmail) {
+    if (!contactEmail) {
       setError("This applicant does not have a contact email on file.");
       return;
     }
@@ -77,7 +96,7 @@ export default function ApplicantDetails() {
         `Best regards,\n${user.username}\n${job.jobCompany}`,
     );
 
-    const mailtoUrl = `mailto:${applicant.contactEmail}?subject=${subject}&body=${body}`;
+    const mailtoUrl = `mailto:${contactEmail}?subject=${subject}&body=${body}`;
 
     try {
       const supported = await Linking.canOpenURL(mailtoUrl);
@@ -95,12 +114,14 @@ export default function ApplicantDetails() {
   return (
     <SafeAreaView style={styles.safeAreaView}>
       <View style={styles.header}>
-        <PrimaryButton
-          title="Back"
-          variant="inactive"
+        <Pressable
+          accessibilityLabel="Go back"
+          accessibilityRole="button"
           onPress={() => router.back()}
           style={styles.backButton}
-        />
+        >
+          <ChevronLeft size={22} color={theme.fontColor.primary} />
+        </Pressable>
         <Text style={styles.heading} numberOfLines={1}>
           Applicant Details
         </Text>
@@ -117,46 +138,72 @@ export default function ApplicantDetails() {
             resizeMode="cover"
           />
           <Text style={styles.name}>{applicant.name}</Text>
-          <Text style={styles.about}>{applicant.about}</Text>
-          <View style={styles.statusRow}>
-            <Text style={styles.statusLabel}>Status for {job?.jobTitle}</Text>
-            <Text style={styles.statusValue}>{status}</Text>
-            <StatusCard status={status} />
-          </View>
+          {about ? <Text style={styles.about}>{about}</Text> : null}
+          <PrimaryButton
+            title="View job listing"
+            variant="inactive"
+            onPress={() => router.push(`/jobDetails/${job.id}`)}
+            style={styles.jobButton}
+          />
         </View>
 
-        <View style={styles.detailCard}>
-          <View style={styles.detailRow}>
-            <Mail size={18} color={theme.fontColor.secondary} />
-            <Text style={styles.detailText}>{applicant.contactEmail}</Text>
+        <View style={styles.statusRow}>
+          <View style={styles.statusTextContainer}>
+            <Text style={styles.statusLabel}>Application status</Text>
+            <Text style={styles.statusJob}>{status}</Text>
           </View>
-          <View style={styles.detailRow}>
-            <Phone size={18} color={theme.fontColor.secondary} />
-            <Text style={styles.detailText}>{applicant.contactPhone}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <BookOpen size={18} color={theme.fontColor.secondary} />
-            <Text style={styles.detailText}>{applicant.education}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Briefcase size={18} color={theme.fontColor.secondary} />
-            <Text style={styles.detailText}>{applicant.experience}</Text>
-          </View>
+          <StatusCard status={status} />
         </View>
 
+        {application.coverLetter ? (
+          <View style={styles.applicationInfo}>
+            <Text style={styles.sectionTitle}>Cover Letter</Text>
+            <Text style={styles.coverLetter}>{application.coverLetter}</Text>
+          </View>
+        ) : null}
+
         <View style={styles.detailCard}>
-          <View style={styles.skillsHeader}>
-            <Sparkles size={18} color={theme.fontColor.secondary} />
-            <Text style={styles.sectionHeading}>Skills</Text>
-          </View>
-          <View style={styles.skillsWrap}>
-            {applicant.skills.map((skill) => (
-              <View key={skill} style={styles.skillBadge}>
-                <Text style={styles.skillText}>{skill}</Text>
-              </View>
-            ))}
-          </View>
+          {contactEmail ? (
+            <View style={styles.detailRow}>
+              <Mail size={18} color={theme.fontColor.secondary} />
+              <Text style={styles.detailText}>{contactEmail}</Text>
+            </View>
+          ) : null}
+          {contactPhone ? (
+            <View style={styles.detailRow}>
+              <Phone size={18} color={theme.fontColor.secondary} />
+              <Text style={styles.detailText}>{contactPhone}</Text>
+            </View>
+          ) : null}
+          {education ? (
+            <View style={styles.detailRow}>
+              <BookOpen size={18} color={theme.fontColor.secondary} />
+              <Text style={styles.detailText}>{education}</Text>
+            </View>
+          ) : null}
+          {experience ? (
+            <View style={styles.detailRow}>
+              <Briefcase size={18} color={theme.fontColor.secondary} />
+              <Text style={styles.detailText}>{experience}</Text>
+            </View>
+          ) : null}
         </View>
+
+        {skills.length > 0 ? (
+          <View style={styles.detailCard}>
+            <View style={styles.skillsHeader}>
+              <Sparkles size={18} color={theme.fontColor.secondary} />
+              <Text style={styles.sectionHeading}>Skills</Text>
+            </View>
+            <View style={styles.skillsWrap}>
+              {skills.map((skill) => (
+                <View key={skill} style={styles.skillBadge}>
+                  <Text style={styles.skillText}>{skill}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        ) : null}
 
         <View style={styles.actions}>
           {["Pending", "Accepted", "Declined", "Completed"].map(
@@ -199,9 +246,12 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.medium,
   },
   backButton: {
-    width: 90,
-    height: 36,
-    paddingVertical: 6,
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 20,
+    backgroundColor: theme.colors.cardBackground,
   },
   heading: {
     color: theme.fontColor.primary,
@@ -219,6 +269,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: theme.colors.cardBackground,
     boxShadow: theme.boxShadow.default,
+    gap: 6,
   },
   avatar: {
     width: 84,
@@ -235,23 +286,48 @@ const styles = StyleSheet.create({
     fontSize: theme.fontSize.small,
     color: theme.fontColor.secondary,
     textAlign: "center",
-    marginTop: 6,
     lineHeight: 19,
+  },
+  jobButton: {
+    marginTop: 8,
+  },
+  applicationInfo: {
+    gap: 8,
+    padding: theme.spacing.medium,
+    borderRadius: theme.radius.large,
+    backgroundColor: theme.colors.cardBackground,
+  },
+  sectionTitle: {
+    color: theme.fontColor.primary,
+    fontSize: theme.fontSize.medium,
+    fontWeight: "700",
+  },
+  coverLetter: {
+    color: theme.fontColor.primary,
+    fontSize: theme.fontSize.small,
+    lineHeight: 20,
   },
   statusRow: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     gap: theme.spacing.small,
-    marginTop: theme.spacing.medium,
+    padding: theme.spacing.medium,
+    borderRadius: theme.radius.large,
+    backgroundColor: theme.colors.cardBackground,
+  },
+  statusTextContainer: {
+    flex: 1,
+    gap: 3,
   },
   statusLabel: {
-    fontSize: theme.fontSize.small,
     color: theme.fontColor.secondary,
-  },
-  statusValue: {
     fontSize: theme.fontSize.small,
-    fontWeight: "700",
+  },
+  statusJob: {
     color: theme.fontColor.primary,
+    fontSize: theme.fontSize.medium,
+    fontWeight: "700",
   },
   detailCard: {
     padding: theme.spacing.medium,

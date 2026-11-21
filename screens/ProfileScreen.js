@@ -1,8 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { File, Paths } from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
-import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, Platform, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -15,15 +15,15 @@ import {
 import { useAuth } from "../contexts/AuthContext";
 import {
   FORMS,
-  initialAbout,
-  initialCertificates,
-  initialEducation,
-  initialExperience,
-  initialProfile,
   makeId,
   PHOTO_STORAGE_KEY,
   sections,
 } from "../data/ProfileScreen.data";
+import {
+  getStarterProfile,
+  loadSavedProfile,
+  saveProfileData,
+} from "../data/profileStorage";
 import theme from "../styles/theme";
 
 const styles = StyleSheet.create({
@@ -219,57 +219,151 @@ const styles = StyleSheet.create({
   },
 });
 
-export default function ProfileScreen() {
-  const { setUser } = useAuth();
+export default function ProfileScreen({
+  profileUserId,
+  profileFallback,
+  readOnly = false,
+  headerContent,
+  footerContent,
+}) {
+  const { user, logout } = useAuth();
+  const router = useRouter();
+  const ownerId = readOnly ? profileUserId : (profileUserId ?? user?.id);
+  const canEdit = !readOnly && user?.role === "employee" && ownerId === user.id;
+  const starter = useMemo(
+    () => profileFallback ?? getStarterProfile(user),
+    [profileFallback, user],
+  );
+  const photoStorageKey = `${PHOTO_STORAGE_KEY}:${ownerId ?? "guest"}`;
+
   const [activeSection, setActiveSection] = useState("Education");
   const [isEditing, setIsEditing] = useState(false);
   const [isMenuVisible, setIsMenuVisible] = useState(false);
-  const [profile, setProfile] = useState(initialProfile);
-  const [education, setEducation] = useState(initialEducation);
-  const [experience, setExperience] = useState(initialExperience);
-  const [certificates, setCertificates] = useState(initialCertificates);
-  const [about, setAbout] = useState(initialAbout);
+  const [profile, setProfile] = useState(starter.profile);
+  const [education, setEducation] = useState(starter.education);
+  const [experience, setExperience] = useState(starter.experience);
+  const [certificates, setCertificates] = useState(starter.certificates);
+  const [about, setAbout] = useState(starter.about);
   const [avatarUri, setAvatarUri] = useState(null);
   const [coverUri, setCoverUri] = useState(null);
   const [photoTarget, setPhotoTarget] = useState(null);
   const [editor, setEditor] = useState(null);
   const [form, setForm] = useState({});
   const [error, setError] = useState("");
+  const [profileLoadedFor, setProfileLoadedFor] = useState(null);
 
+  // Load the selected employee's saved profile, or the application snapshot.
+  useFocusEffect(
+    useCallback(() => {
+      setProfileLoadedFor(null);
+      setProfile(starter.profile);
+      setEducation(starter.education);
+      setExperience(starter.experience);
+      setCertificates(starter.certificates);
+      setAbout(starter.about);
+      setAvatarUri(null);
+      setCoverUri(null);
+
+      if (!ownerId) return;
+      let cancelled = false;
+
+      loadSavedProfile(ownerId).then((saved) => {
+        if (cancelled) return;
+        setProfile({
+          ...starter.profile,
+          ...(saved?.profile ?? {}),
+          email:
+            saved?.profile?.email ??
+            starter.profile.email ??
+            saved?.email ??
+            user?.email ??
+            "",
+          phone:
+            saved?.profile?.phone ??
+            saved?.contactNumber ??
+            starter.profile.phone ??
+            "",
+        });
+        setEducation(saved?.education ?? starter.education);
+        setExperience(saved?.experience ?? starter.experience);
+        setCertificates(saved?.certificates ?? starter.certificates);
+        setAbout({ ...starter.about, ...(saved?.about ?? {}) });
+        setProfileLoadedFor(ownerId);
+      });
+
+      return () => {
+        cancelled = true;
+      };
+    }, [ownerId, starter, user?.email]),
+  );
+
+  // Do not save an employer's read-only view or data before its owner loads.
   useEffect(() => {
-    let isMounted = true;
+    if (!canEdit || profileLoadedFor !== ownerId || !ownerId) return;
+    saveProfileData(ownerId, {
+      profile,
+      contactNumber: profile.phone ?? "",
+      education,
+      experience,
+      certificates,
+      about,
+    });
+  }, [
+    canEdit,
+    profileLoadedFor,
+    ownerId,
+    profile,
+    education,
+    experience,
+    certificates,
+    about,
+  ]);
 
-    const loadPhotos = async () => {
-      try {
-        const savedPhotos = await AsyncStorage.getItem(PHOTO_STORAGE_KEY);
-        if (!savedPhotos) return;
+  // Load this account's saved photos.
+  useFocusEffect(
+    useCallback(() => {
+      let isMounted = true;
 
-        const photos = JSON.parse(savedPhotos);
-        if (isMounted) {
-          setAvatarUri(
-            typeof photos.avatarUri === "string" ? photos.avatarUri : null,
-          );
-          setCoverUri(
-            typeof photos.coverUri === "string" ? photos.coverUri : null,
-          );
+      const loadPhotos = async () => {
+        try {
+          const savedPhotos = await AsyncStorage.getItem(photoStorageKey);
+          if (!savedPhotos) {
+            if (isMounted) {
+              setAvatarUri(null);
+              setCoverUri(null);
+            }
+            return;
+          }
+
+          const photos = JSON.parse(savedPhotos);
+          if (isMounted) {
+            setAvatarUri(
+              typeof photos.avatarUri === "string" ? photos.avatarUri : null,
+            );
+            setCoverUri(
+              typeof photos.coverUri === "string" ? photos.coverUri : null,
+            );
+          }
+        } catch (loadError) {
+          if (isMounted) {
+            setAvatarUri(null);
+            setCoverUri(null);
+            Alert.alert(
+              "Could not load photos",
+              loadError instanceof Error
+                ? loadError.message
+                : "Please try again.",
+            );
+          }
         }
-      } catch (loadError) {
-        if (isMounted) {
-          Alert.alert(
-            "Could not load photos",
-            loadError instanceof Error
-              ? loadError.message
-              : "Please try again.",
-          );
-        }
-      }
-    };
+      };
 
-    loadPhotos();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+      loadPhotos();
+      return () => {
+        isMounted = false;
+      };
+    }, [photoStorageKey]),
+  );
 
   const openEditor = (type, item = null) => {
     let values = {};
@@ -322,7 +416,13 @@ export default function ProfileScreen() {
 
     const clean = (key) => (form[key] ?? "").trim();
     if (editor.type === "profile") {
-      setProfile({ name: clean("name"), location: clean("location") });
+      setProfile({
+        name: clean("name"),
+        title: clean("title"),
+        location: clean("location"),
+        email: clean("email"),
+        phone: clean("phone"),
+      });
     } else if (editor.type === "about") {
       setAbout({
         text: clean("text"),
@@ -361,6 +461,8 @@ export default function ProfileScreen() {
           title: clean("title"),
           subtitle: clean("subtitle"),
           date: clean("date"),
+          expirationDate: clean("expirationDate"),
+          credential: clean("credential"),
         };
       }
 
@@ -419,10 +521,14 @@ export default function ProfileScreen() {
     setPhotoTarget(null);
 
     try {
+      if (Platform.OS !== "web") {
+        await new Promise((resolve) => setTimeout(resolve, 250));
+      }
+
       const options = {
         mediaTypes: ["images"],
-        allowsEditing: true,
-        aspect: target === "avatar" ? [1, 1] : [3, 1],
+        allowsEditing: target === "avatar",
+        ...(target === "avatar" ? { aspect: [1, 1] } : {}),
         quality: 0.8,
         base64: Platform.OS === "web",
       };
@@ -439,6 +545,19 @@ export default function ProfileScreen() {
         }
         result = await ImagePicker.launchCameraAsync(options);
       } else {
+        if (Platform.OS !== "web") {
+          const permission =
+            await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+          if (!permission.granted) {
+            Alert.alert(
+              "Photo library access needed",
+              "Allow photo library access in your settings to choose a photo.",
+            );
+            return;
+          }
+        }
+
         result = await ImagePicker.launchImageLibraryAsync(options);
       }
 
@@ -479,10 +598,7 @@ export default function ProfileScreen() {
 
       const nextPhotos = { avatarUri, coverUri, [photoKey]: uri };
       try {
-        await AsyncStorage.setItem(
-          PHOTO_STORAGE_KEY,
-          JSON.stringify(nextPhotos),
-        );
+        await AsyncStorage.setItem(photoStorageKey, JSON.stringify(nextPhotos));
       } catch (saveError) {
         try {
           if (copiedFile?.exists) copiedFile.delete();
@@ -525,7 +641,7 @@ export default function ProfileScreen() {
     const nextPhotos = { avatarUri, coverUri, [photoKey]: null };
 
     try {
-      await AsyncStorage.setItem(PHOTO_STORAGE_KEY, JSON.stringify(nextPhotos));
+      await AsyncStorage.setItem(photoStorageKey, JSON.stringify(nextPhotos));
     } catch (removeError) {
       Alert.alert(
         "Could not remove photo",
@@ -558,11 +674,13 @@ export default function ProfileScreen() {
         profile={profile}
         coverUri={coverUri}
         avatarUri={avatarUri}
-        isEditing={isEditing}
+        avatarSource={profileFallback?.avatar}
+        isEditing={canEdit && isEditing}
+        canEdit={canEdit}
         onPhotoTarget={setPhotoTarget}
-        onMenuPress={() => setIsMenuVisible(true)}
+        onMenuPress={canEdit ? () => setIsMenuVisible(true) : undefined}
         onToggleEditing={() => setIsEditing((value) => !value)}
-        onEditProfile={() => openEditor("profile")}
+        onEditProfile={() => router.push("/profile-edit")}
         sections={sections}
         activeSection={activeSection}
         onSelectSection={setActiveSection}
@@ -578,6 +696,8 @@ export default function ProfileScreen() {
         onEdit={(type, item) => openEditor(type, item)}
         onDelete={confirmDelete}
         onClearAbout={confirmClearAbout}
+        headerContent={headerContent}
+        footerContent={footerContent}
       />
       <ProfileEditorModal
         editor={editor}
@@ -606,7 +726,8 @@ export default function ProfileScreen() {
           router.push("/notifications");
         }}
         onLogout={() => {
-          setUser(null);
+          setIsMenuVisible(false);
+          logout();
           router.replace("/");
         }}
       />

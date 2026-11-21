@@ -16,7 +16,7 @@ export function JobsProvider({ children }) {
 
   const getJobsForEmployer = useCallback(
     (employerId) =>
-      jobs.filter((job) => job.employerId === employerId && job.isPublished),
+      jobs.filter((job) => job.employerId === employerId),
     [jobs],
   );
 
@@ -68,12 +68,32 @@ export function JobsProvider({ children }) {
     [getJobById],
   );
 
+  const toggleJobAvailability = useCallback(
+    (jobId, employerId) => {
+      const job = getJobById(jobId);
+      if (!job || job.employerId !== employerId){
+        throw new Error("You can only change your own job listings. ");
+      }
+      
+      setJobs((current) =>
+        current.map((item) =>
+          String(item.id) === String(jobId)
+            ?{ ...item, isPublished: !item.isPublished}
+            : item,
+        ),
+      );
+    },
+    [getJobById],
+  );
+
+
   return (
     <JobsContext.Provider
       value={{
         jobs,
         getJobById,
         getJobsForEmployer,
+        toggleJobAvailability,
         createJob,
         updateJob,
         deleteJob,

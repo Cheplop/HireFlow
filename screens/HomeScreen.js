@@ -106,6 +106,7 @@ export default function HomeScreen() {
 
       <FlatList
         data={filteredJobs}
+        style={styles.jobList}
         contentContainerStyle={styles.cards}
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
@@ -190,15 +191,18 @@ const styles = StyleSheet.create({
     height: 36,
     paddingHorizontal: 14,
     paddingVertical: 6,
-    borderRadius: theme.radius.large,
+    borderRadius: 17,
     borderColor: theme.colors.border,
   },
+  jobList: {
+    flex: 1,
+  },
   cards: {
-    gap: theme.spacing.medium,
-    paddingBottom: 130, // Extra padding to clear bottom tab bar and floating action button
+    gap: 12,
+    paddingBottom: 130,
     paddingHorizontal: 22,
-    paddingTop: theme.spacing.small,
-    flexGrow: 0, // Prevents the list from stretching/centering items vertically
+    paddingTop: 2,
+    flexGrow: 1,
   },
   emptyState: {
     color: theme.fontColor.secondary,

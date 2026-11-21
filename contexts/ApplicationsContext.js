@@ -3,17 +3,22 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useRef,
   useState,
 } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { applicants as seedApplicants } from "../data/applicants";
 import { work } from "../data/jobs";
+import { useAuth } from "./AuthContext";
 import { useJobs } from "./JobsContext";
 
 const ApplicationsContext = createContext(null);
+const APPLICATIONS_STORAGE_KEY = "hireflow.applications";
 
 export function ApplicationsProvider({ children }) {
+  const { user } = useAuth();
   const { getJobById } = useJobs();
 
   // Seed existing sample applications
@@ -24,6 +29,7 @@ export function ApplicationsProvider({ children }) {
       applicant,
       status: applicant.applicationStatuses[jobId] || "Pending",
       coverLetter: "",
+      appliedAt: null,
     })),
   );
 
@@ -46,6 +52,7 @@ export function ApplicationsProvider({ children }) {
       },
       status: job.status,
       coverLetter: "",
+      appliedAt: null,
     }));
 
   const initialApplications = [
@@ -57,7 +64,47 @@ export function ApplicationsProvider({ children }) {
   }));
 
   const [applications, setApplications] = useState(initialApplications);
+  const [hasLoadedApplications, setHasLoadedApplications] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  const [saveError, setSaveError] = useState("");
   const nextApplicationId = useRef(initialApplications.length + 1);
+
+  useEffect(() => {
+    let cancelled = false;
+    AsyncStorage.getItem(APPLICATIONS_STORAGE_KEY)
+      .then((stored) => {
+        if (!stored || cancelled) return;
+        const savedApplications = JSON.parse(stored);
+        if (!Array.isArray(savedApplications)) return;
+        if (!cancelled) {
+          setApplications(savedApplications);
+          nextApplicationId.current = Math.max(
+            ...savedApplications.map((item) => Number(item.id) || 0),
+            0,
+          ) + 1;
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setLoadError("Saved applications could not be loaded. Showing this session's data.");
+      })
+      .finally(() => {
+        if (!cancelled) setHasLoadedApplications(true);
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (!hasLoadedApplications) return;
+    AsyncStorage.setItem(APPLICATIONS_STORAGE_KEY, JSON.stringify(applications))
+      .then(() => setSaveError(""))
+      .catch((error) => {
+        setSaveError(
+          error instanceof Error
+            ? `Application changes could not be saved: ${error.message}`
+            : "Application changes could not be saved.",
+        );
+      });
+  }, [applications, hasLoadedApplications]);
 
   // Create an application
   const applyForJob = useCallback(
@@ -107,6 +154,7 @@ export function ApplicationsProvider({ children }) {
         },
         status: "Pending",
         coverLetter: trimmedCoverLetter,
+        appliedAt: new Date().toISOString(),
       };
 
       nextApplicationId.current += 1;
@@ -219,7 +267,11 @@ export function ApplicationsProvider({ children }) {
 
   // Allow employers to update application status
   const setApplicationStatus = useCallback(
-    (applicationId, employerId, status) => {
+    async (applicationId, employerId, status) => {
+      if (!hasLoadedApplications) {
+        throw new Error("Applications are still loading. Please try again.");
+      }
+
       const application = getApplicationById(applicationId);
       const job = application && getJobById(application.jobId);
 
@@ -230,7 +282,13 @@ export function ApplicationsProvider({ children }) {
         "Completed",
       ];
 
-      if (!application || !job || job.employerId !== employerId) {
+      if (
+        user?.role !== "employer" ||
+        user.id !== employerId ||
+        !application ||
+        !job ||
+        job.employerId !== user.id
+      ) {
         throw new Error(
           "You can only manage applicants for your own jobs.",
         );
@@ -240,15 +298,35 @@ export function ApplicationsProvider({ children }) {
         throw new Error("Choose a valid application status.");
       }
 
-      setApplications((current) =>
-        current.map((item) =>
-          item.id === application.id
-            ? { ...item, status }
-            : item,
-        ),
+      const allowedTransitions = {
+        Pending: ["Accepted", "Declined"],
+        Accepted: ["Completed"],
+        Declined: [],
+        Completed: [],
+      };
+      if (!allowedTransitions[application.status]?.includes(status)) {
+        throw new Error("This application cannot be moved to that status.");
+      }
+
+      const updatedApplications = applications.map((item) =>
+        item.id === application.id ? { ...item, status } : item,
       );
+      try {
+        await AsyncStorage.setItem(
+          APPLICATIONS_STORAGE_KEY,
+          JSON.stringify(updatedApplications),
+        );
+      } catch (error) {
+        throw new Error(
+          error instanceof Error
+            ? `Could not save application status: ${error.message}`
+            : "Could not save application status. Please try again.",
+        );
+      }
+      setSaveError("");
+      setApplications(updatedApplications);
     },
-    [getApplicationById, getJobById],
+    [applications, getApplicationById, getJobById, hasLoadedApplications, user],
   );
 
   // Allow employers to delete applications for their own jobs
@@ -275,6 +353,9 @@ export function ApplicationsProvider({ children }) {
     <ApplicationsContext.Provider
       value={{
         applications,
+        hasLoadedApplications,
+        loadError,
+        saveError,
         applyForJob,
         getApplication,
         getApplicationById,

@@ -1,3 +1,5 @@
+import { companyLogos, schoolLogos } from "./companyLogos";
+
 export const sections = ['Education', 'Job Experience', 'Licenses & Cert', 'About'];
 
 export const EDUCATION_GROUPS = ['Tertiary', 'Secondary', 'Primary', 'Other'];
@@ -55,19 +57,21 @@ export const initialEducation = [
     group: 'Tertiary',
     title: 'Harvard University',
     subtitle: 'B.S in Information Technology',
+    logo: schoolLogos.harvard,
     date: '2016–2020',
   },
   {
     id: 'edu-2',
     group: 'Secondary',
-    title: 'Cagayan de Oro City National High School',
+    title: 'New York High School',
     subtitle: 'High School Diploma',
+    logo: schoolLogos.newYork,
     date: '2012–2016',
   },
   {
     id: 'edu-3',
     group: 'Primary',
-    title: 'Cagayan de Oro City Central School',
+    title: 'Los Angeles Elementary School',
     subtitle: 'Elementary Education',
     date: '2006–2012',
   },
@@ -78,6 +82,7 @@ export const initialExperience = [
     id: 'exp-1',
     title: 'Senior Web Developer',
     subtitle: 'Amazon Incorporated',
+    logo: companyLogos.amazon,
     date: '2021–2025',
     details: ['Quezon City, Philippines / Onsite', 'Full-time'],
     description:
@@ -87,6 +92,7 @@ export const initialExperience = [
     id: 'exp-2',
     title: 'Web Developer',
     subtitle: 'Amazon Incorporated',
+    logo: companyLogos.amazon,
     date: '2018–2021',
     details: ['Cagayan de Oro City / Hybrid', 'Full-time'],
     description:
@@ -99,18 +105,21 @@ export const initialCertificates = [
     id: 'cert-1',
     title: 'Senior Web Developer',
     subtitle: 'Amazon Incorporated',
+    logo: companyLogos.amazon,
     date: '2021–2025',
   },
   {
     id: 'cert-2',
     title: 'AWS Certified Developer',
     subtitle: 'Amazon Web Services',
+    logo: companyLogos.aws,
     date: '2023',
   },
   {
     id: 'cert-3',
     title: 'Professional Web Accessibility',
     subtitle: 'W3C Training',
+    logo: companyLogos.w3c,
     date: '2022',
   },
 ];

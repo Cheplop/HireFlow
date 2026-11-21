@@ -2,7 +2,7 @@
 import React from "react";
 import { Text, TextInput, View, StyleSheet } from "react-native";
 
-export function AuthInput({label, error, style, children, icon,rightIcon,
+export function AuthInput({label, error, style, inputStyle, children, icon,rightIcon,
   ...props
 }) {
   return (
@@ -16,6 +16,7 @@ export function AuthInput({label, error, style, children, icon,rightIcon,
           {...props}
           style={[
             styles.input,
+            inputStyle,
             icon && styles.inputWithIcon,
             rightIcon && styles.inputWithRightIcon,
             error && styles.inputError

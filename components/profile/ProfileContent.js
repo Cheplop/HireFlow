@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import EntryCard from "./EntryCard";
@@ -11,7 +11,8 @@ const GROUP_ORDER = ["Tertiary", "Secondary", "Primary"];
 
 export default function ProfileContent(props) {
   const {
-    profile, coverUri, avatarUri, isEditing, onPhotoTarget, onToggleEditing,
+    profile, coverUri, avatarUri, avatarSource, isEditing, canEdit,
+    headerContent, footerContent, onPhotoTarget, onToggleEditing,
     onEditProfile, onMenuPress, sections, activeSection, onSelectSection,
     filteredEducation, educationEmpty, filteredExperience, experienceEmpty,
     filteredCertificates, certificatesEmpty, about, styles, onAdd, onEdit,
@@ -20,7 +21,7 @@ export default function ProfileContent(props) {
 
   const AddButton = ({ type, label }) =>
     isEditing ? (
-      <Pressable style={[styles.actionButton, { alignSelf: "flex-start" }]} onPress={() => onAdd(type)}>
+      <Pressable style={[styles.actionButton, { alignSelf: "flex-start", marginBottom: 12 }]} onPress={() => onAdd(type)}>
         <Ionicons name="add" size={14} color={theme.actions.editPrimary} />
         <Text style={styles.actionText}>{label}</Text>
       </Pressable>
@@ -41,13 +42,18 @@ export default function ProfileContent(props) {
           const items = filteredEducation.filter((e) => e.group === group);
           if (!items.length) return null;
           return (
-            <View key={group}>
-              <Text style={styles.groupTitle}>{group}</Text>
+            <View key={group} style={localStyles.groupContainer}>
+              {/* Muted header with lines extending after each */}
+              <View style={localStyles.groupHeaderContainer}>
+                <Text style={localStyles.groupTitle}>{group}</Text>
+                <View style={localStyles.groupLine} />
+              </View>
               <View style={styles.sectionContent}>
                 {items.map((item) => (
                   <EntryCard
                     key={item.id}
                     item={item}
+                    logoName={item.title}
                     isEditing={isEditing}
                     onEdit={() => onEdit("education", item)}
                     onDelete={() => onDelete("education", item)}
@@ -85,6 +91,7 @@ export default function ProfileContent(props) {
         <EntryCard
           key={item.id}
           item={item}
+          logoName={item.subtitle || item.title}
           isEditing={isEditing}
           onEdit={() => onEdit("certificates", item)}
           onDelete={() => onDelete("certificates", item)}
@@ -96,6 +103,9 @@ export default function ProfileContent(props) {
   const renderAbout = () => (
     <View style={styles.aboutCard}>
       <Text style={styles.aboutTitle}>About me</Text>
+      {!!profile.email && <Text style={styles.aboutText}>Email: {profile.email}</Text>}
+      {!!profile.phone && <Text style={styles.aboutText}>Contact: {profile.phone}</Text>}
+      {!!profile.location && <Text style={styles.aboutText}>Address: {profile.location}</Text>}
       <Text style={styles.aboutText}>{about.text || "Nothing here yet."}</Text>
       <View style={styles.skills}>
         {about.skills.map((s) => (
@@ -118,30 +128,32 @@ export default function ProfileContent(props) {
 
   return (
     <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      {headerContent}
       <ProfileHeader
         profile={profile}
         coverUri={coverUri}
         avatarUri={avatarUri}
+        avatarSource={avatarSource}
         isEditing={isEditing}
         onPhotoTarget={onPhotoTarget}
         onMenuPress={onMenuPress}
       />
 
-      <View style={[styles.profileActions, { justifyContent: "flex-start", marginTop: 0, marginBottom: 14 }]}>
-        <Pressable style={[styles.actionButton]} onPress={onToggleEditing}>
-          <Ionicons
-            name={isEditing ? "checkmark" : "create-outline"}
-            size={13}
-            color={theme.actions.editPrimary}
-          />
-          <Text style={styles.actionText}>{isEditing ? "Done" : "Edit profile"}</Text>
-        </Pressable>
-        {isEditing && (
-          <Pressable style={styles.actionButton} onPress={onEditProfile}>
-            <Text style={styles.actionText}>Name & location</Text>
+      {canEdit && (
+        <View style={[styles.profileActions, { justifyContent: "flex-start", marginTop: 0, marginBottom: 14 }]}>
+          <Pressable style={[styles.actionButton]} onPress={onToggleEditing}>
+            <Ionicons
+              name={isEditing ? "checkmark" : "create-outline"}
+              size={13}
+              color={theme.actions.editPrimary}
+            />
+            <Text style={styles.actionText}>{isEditing ? "Done editing entries" : "Edit entries"}</Text>
           </Pressable>
-        )}
-      </View>
+          <Pressable style={styles.actionButton} onPress={onEditProfile}>
+            <Text style={styles.actionText}>Edit profile</Text>
+          </Pressable>
+        </View>
+      )}
 
       <SectionTabs sections={sections} active={activeSection} onSelect={onSelectSection} />
 
@@ -151,6 +163,30 @@ export default function ProfileContent(props) {
         {activeSection === "Licenses & Cert" && renderCertificates()}
         {activeSection === "About" && renderAbout()}
       </View>
+      {footerContent}
     </ScrollView>
   );
 }
+
+const localStyles = StyleSheet.create({
+  groupContainer: {
+    marginBottom: theme.spacing.small,
+  },
+  groupHeaderContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: theme.spacing.small,
+    marginTop: 4,
+  },
+  groupTitle: {
+    fontSize: theme.fontSize.small,
+    fontWeight: theme.fontWeight.semibold,
+    color: theme.fontColor.secondary, // Uses "#888888" from your theme
+    marginRight: theme.spacing.small,
+  },
+  groupLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: theme.fontColor.secondary, // Uses "#E5E7EB" from your theme
+  },
+});

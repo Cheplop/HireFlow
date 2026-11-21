@@ -21,7 +21,13 @@ export default function useProfilePhotos() {
       try {
         const savedPhotos = await AsyncStorage.getItem(PHOTO_STORAGE_KEY);
 
-        if (!savedPhotos) return;
+        if (!savedPhotos) {
+          if (isMounted) {
+            setAvatarUri(null);
+            setCoverUri(null);
+          }
+          return;
+        }
 
         const photos = JSON.parse(savedPhotos);
 
@@ -35,6 +41,8 @@ export default function useProfilePhotos() {
         }
       } catch (error) {
         if (isMounted) {
+          setAvatarUri(null);
+          setCoverUri(null);
           Alert.alert(
             'Could not load photos',
             error instanceof Error ? error.message : 'Please try again.'
@@ -72,8 +80,8 @@ export default function useProfilePhotos() {
     try {
       const options = {
         mediaTypes: ['images'],
-        allowsEditing: true,
-        aspect: target === 'avatar' ? [1, 1] : [3, 1],
+        allowsEditing: target === 'avatar',
+        ...(target === 'avatar' ? { aspect: [1, 1] } : {}),
         quality: 0.8,
         base64: Platform.OS === 'web',
       };
@@ -94,6 +102,19 @@ export default function useProfilePhotos() {
 
         result = await ImagePicker.launchCameraAsync(options);
       } else {
+        if (Platform.OS !== 'web') {
+          const permission =
+            await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+          if (!permission.granted) {
+            Alert.alert(
+              'Photo library access needed',
+              'Allow photo library access in your settings to choose a photo.'
+            );
+            return;
+          }
+        }
+
         result = await ImagePicker.launchImageLibraryAsync(options);
       }
 

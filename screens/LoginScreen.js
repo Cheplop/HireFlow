@@ -1,4 +1,6 @@
-import { Link, router } from "expo-router";
+import { AuthInput } from "@/components/common/AuthInput";
+import { PrimaryButton } from "@/components/common/PrimaryButton";
+import { Link } from "expo-router";
 import { Eye, EyeOff, KeyRound, User } from "lucide-react-native";
 import { useState } from "react";
 import {
@@ -9,40 +11,41 @@ import {
   Text,
   View,
 } from "react-native";
+import { useAuth } from "../contexts/AuthContext";
 import theme from "../styles/theme";
 
-import { AuthInput } from "@/components/common/AuthInput";
-import { PrimaryButton } from "@/components/common/PrimaryButton";
-import { useAuth } from "../contexts/AuthContext";
-
 export default function LoginScreen() {
-  const { setUser } = useAuth();
+  const { login } = useAuth();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleLogin = () => {
-    const accounts = {
-      remiel: { id: "remiel", username: "remiel", role: "employee" },
-      bill: { id: "bill", username: "Bill", role: "employer" },
-      sean: { id: "sean", username: "Sean", role: "employer" },
-    };
-    const account = accounts[email.toLowerCase()];
-
-    if (!email || !password) {
-      setError("Wakay gi input dol!");
-      return;
-    }
-
-    if (!account || password !== "1234") {
-      setError("PUK manka dol");
+  const handleLogin = async () => {
+    if (!email.trim() || !password) {
+      setError("Please enter your username/email and password.");
       return;
     }
 
     setError("");
-    setUser(account);
-    router.push("/(tabs)");
+    setIsSubmitting(true);
+
+    try {
+      const result = await login(email.trim(), password);
+
+      if (!result.ok) {
+        setError("Incorrect username/email or password.");
+        return;
+      }
+
+      // PublicOnly handles redirection after successful login.
+    } catch {
+      setError("Something went wrong. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -55,6 +58,7 @@ export default function LoginScreen() {
               style={styles.logo}
             />
           </View>
+
           <View style={styles.header}>
             <Text style={styles.brand}>HireFlow</Text>
             <Text style={styles.subtitle}>
@@ -64,13 +68,12 @@ export default function LoginScreen() {
         </View>
 
         <AuthInput
-          label="Email"
-          placeholder="name@example.com"
-          keyboardType="email-address"
+          label="Username or email"
+          placeholder="Username or name@example.com"
           autoCapitalize="none"
           value={email}
-          onChangeText={setEmail} // Fixed the stray 'z' here
-          icon={<User size={20} />} // Pass your icon component here
+          onChangeText={setEmail}
+          icon={<User size={20} />}
         />
 
         <AuthInput
@@ -91,12 +94,16 @@ export default function LoginScreen() {
           }
         />
 
-        <PrimaryButton title="Log in" onPress={handleLogin} />
+        <PrimaryButton
+          title={isSubmitting ? "Logging in..." : "Log in"}
+          onPress={handleLogin}
+        />
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
         <View style={styles.registerRow}>
           <Text style={styles.registerText}>Don’t have an account? </Text>
+
           <Link href="/registration">
             <Text style={styles.registerLink}>register here</Text>
           </Link>
