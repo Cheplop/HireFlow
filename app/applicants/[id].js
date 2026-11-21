@@ -78,10 +78,13 @@ export default function ApplicantDetails() {
   const experience = applicant.experience || profileFallback?.experience;
   const certifications =
     applicant.certifications || profileFallback?.certifications || "";
-  const about = applicant.about || profileFallback?.about;
+  const rawAbout = applicant.about ?? profileFallback?.about;
+  const about = typeof rawAbout === "string" ? rawAbout : rawAbout?.text || "";
   const skills = applicant.skills?.length
     ? applicant.skills
-    : profileFallback?.skills || [];
+    : rawAbout?.skills?.length
+      ? rawAbout.skills
+      : profileFallback?.skills || [];
 
   const coverLetterText =
     typeof application.coverLetter === "string"
