@@ -8,6 +8,7 @@ import { ApplyCard } from '@/components/employee/ApplyCard';
 import { PrimaryButton } from '@/components/common/PrimaryButton';
 import SearchRow from '@/components/common/SearchRow';
 import { useAuth } from '../contexts/AuthContext';
+import { useApplications } from '../contexts/ApplicationsContext';
 import { useJobs } from '../contexts/JobsContext';
 import theme from '../styles/theme';
 
@@ -20,10 +21,23 @@ function normalizeType(type) {
 export default function HomeScreen() {
   const { user } = useAuth();
   const { jobs, getJobsForEmployer } = useJobs();
+  const { applications } = useApplications();
   const isEmployer = user?.role === 'employer';
-  const visibleJobs = isEmployer
-    ? getJobsForEmployer(user.id)
-    : jobs.filter((job) => job.isPublished);
+  const filledJobIds = useMemo(
+    () => new Set(
+      applications
+        .filter((application) => ['Accepted', 'Completed'].includes(application.status))
+        .map((application) => String(application.jobId)),
+    ),
+    [applications],
+  );
+  const visibleJobs = useMemo(() => {
+    const availableJobs = isEmployer
+      ? getJobsForEmployer(user.id)
+      : jobs.filter((job) => job.isPublished);
+
+    return availableJobs.filter((job) => !filledJobIds.has(String(job.id)));
+  }, [filledJobIds, getJobsForEmployer, isEmployer, jobs, user?.id]);
   const [selectedType, setSelectedType] = useState('All');
   const [search, setSearch] = useState('');
 

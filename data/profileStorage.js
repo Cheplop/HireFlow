@@ -24,16 +24,11 @@ export async function loadSavedProfile(userId) {
 // Merges `patch` into whatever is already saved for this account.
 export async function saveProfileData(userId, patch) {
   if (!userId) return;
-
-  try {
-    const current = (await loadSavedProfile(userId)) || {};
-    await AsyncStorage.setItem(
-      profileKey(userId),
-      JSON.stringify({ ...current, ...patch }),
-    );
-  } catch {
-    // Saving is best-effort; the screens still work without it.
-  }
+  const current = (await loadSavedProfile(userId)) || {};
+  await AsyncStorage.setItem(
+    profileKey(userId),
+    JSON.stringify({ ...current, ...patch }),
+  );
 }
 
 // What a profile looks like before anything has been saved.

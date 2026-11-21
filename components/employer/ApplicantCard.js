@@ -4,8 +4,12 @@ import { Image, Platform, StyleSheet, Text, TouchableOpacity, View } from "react
 import theme from "../../styles/theme";
 import StatusCard from "../common/StatusCard";
 
-export default function ApplicantCard({ applicant, jobId, status }) {
+export default function ApplicantCard({ applicant, jobId, status, avatarSource }) {
   const router = useRouter();
+  const image = avatarSource || applicant.avatar;
+  const source = typeof image === "string"
+    ? { uri: image }
+    : image || require("../../assets/images/Hireflow.png");
 
   return (
     <TouchableOpacity
@@ -16,7 +20,7 @@ export default function ApplicantCard({ applicant, jobId, status }) {
     >
       <View style={styles.imageContainer}>
         <Image
-          source={applicant.avatar}
+          source={source}
           style={styles.image}
           resizeMode="cover"
         />
@@ -28,7 +32,7 @@ export default function ApplicantCard({ applicant, jobId, status }) {
           <Text style={styles.applyingForTitle}>{applicant.jobTitle}</Text>
         </Text>
         <Text style={styles.cardTitle} numberOfLines={1}>
-          {applicant.name}
+          {applicant.name || "Applicant"}
         </Text>
         <View style={styles.educationRow}>
           <GraduationCap size={16} color={theme.fontColor.primary} />
@@ -121,16 +125,19 @@ const styles = StyleSheet.create({
     fontSize: theme.fontSize.small,
     color: theme.fontColor.secondary,
   },
+  appliedDate: {
+    color: theme.fontColor.secondary,
+    fontSize: 11,
+  },
   rightSection: {
-    position: "relative",
+    flexDirection: "column",
     justifyContent: "center",
     alignItems: "center",
-    width: 44,
+    width: 36,
+    gap: 12,
     alignSelf: "stretch",
   },
   chevron: {
-    position: "absolute",
-    top: 0,
-    right: -2,
+    flexShrink: 0,
   },
 });

@@ -1,7 +1,8 @@
 import { LogOut, Users } from "lucide-react-native";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
+  ActivityIndicator,
   FlatList,
   Pressable,
   Platform,
@@ -10,6 +11,7 @@ import {
   Text,
   View,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -19,6 +21,7 @@ import SearchRow from "@/components/common/SearchRow";
 import { useAuth } from "../contexts/AuthContext";
 import { useApplicants } from "../contexts/ApplicantsContext";
 import { useJobs } from "../contexts/JobsContext";
+import { PHOTO_STORAGE_KEY } from "../data/ProfileScreen.data";
 import theme from "../styles/theme";
 
 const jobModes = ["All", "Full-time", "Part-time", "Contractual"];
@@ -26,12 +29,19 @@ const jobModes = ["All", "Full-time", "Part-time", "Contractual"];
 export default function ApplicantManagementScreen() {
   const [search, setSearch] = useState("");
   const [selectedJobMode, setSelectedJobMode] = useState(jobModes[0]);
+  const [profilePhotos, setProfilePhotos] = useState({});
+  const [photoLoadError, setPhotoLoadError] = useState("");
 
   const { user, logout } = useAuth();
   const router = useRouter();
   const { getJobsForEmployer } = useJobs();
   const employerJobs = user?.id ? getJobsForEmployer(user.id) : [];
-  const { getApplicantsByJob } = useApplicants();
+  const {
+    getApplicantsByJob,
+    hasLoadedApplications,
+    loadError,
+    saveError,
+  } = useApplicants();
 
   const applications = useMemo(
     () =>
@@ -63,6 +73,56 @@ export default function ApplicantManagementScreen() {
       return matchesMode && matchesSearch;
     });
   }, [applications, search, selectedJobMode]);
+
+  useEffect(() => {
+    if (!hasLoadedApplications) return undefined;
+    let active = true;
+    const employeeIds = [...new Set(
+      applications.map((applicant) => applicant.employeeId).filter(Boolean),
+    )];
+
+    if (!employeeIds.length) {
+      setProfilePhotos({});
+      setPhotoLoadError("");
+      return () => { active = false; };
+    }
+
+    async function loadPhotos() {
+      try {
+        const savedEntries = await AsyncStorage.multiGet(
+          employeeIds.map((id) => `${PHOTO_STORAGE_KEY}:${id}`),
+        );
+        if (!active) return;
+        const photos = {};
+        let hasInvalidPhotoData = false;
+        savedEntries.forEach(([key, value]) => {
+          if (!value) return;
+          try {
+            const avatarUri = JSON.parse(value)?.avatarUri;
+            const employeeId = key.slice(`${PHOTO_STORAGE_KEY}:`.length);
+            if (typeof avatarUri === "string") photos[employeeId] = { uri: avatarUri };
+          } catch {
+            hasInvalidPhotoData = true;
+          }
+        });
+        setProfilePhotos(photos);
+        setPhotoLoadError(
+          hasInvalidPhotoData ? "Some applicant profile photos could not be loaded." : "",
+        );
+      } catch (error) {
+        if (active) {
+          setPhotoLoadError(
+            error instanceof Error
+              ? `Applicant photos could not be loaded: ${error.message}`
+              : "Applicant photos could not be loaded.",
+          );
+        }
+      }
+    }
+
+    void loadPhotos();
+    return () => { active = false; };
+  }, [applications, hasLoadedApplications]);
 
   const performLogout = async () => {
     try {
@@ -148,7 +208,7 @@ export default function ApplicantManagementScreen() {
 
       {/* Applicant List */}
       <FlatList
-        data={filteredApplicants}
+        data={hasLoadedApplications ? filteredApplicants : []}
         style={styles.applicantList}
         contentContainerStyle={styles.cards}
         showsVerticalScrollIndicator={false}
@@ -158,21 +218,36 @@ export default function ApplicantManagementScreen() {
             applicant={item}
             jobId={item.jobId}
             status={item.status}
+            avatarSource={profilePhotos[item.employeeId] ?? item.avatar}
           />
         )}
+        ListHeaderComponent={
+          loadError || saveError || photoLoadError ? (
+            <Text style={styles.errorText}>
+              {[loadError, saveError, photoLoadError].filter(Boolean).join("\n")}
+            </Text>
+          ) : null
+        }
         ListEmptyComponent={
-          <View style={styles.emptyState}>
+          !hasLoadedApplications ? <View style={styles.emptyState}>
+            <ActivityIndicator color={theme.colors.primary} />
+            <Text style={styles.emptyText}>Loading applications…</Text>
+          </View> : <View style={styles.emptyState}>
             <Users size={40} color={theme.fontColor.secondary} />
 
             <Text style={styles.emptyTitle}>
               {employerJobs.length
-                ? "No applications found"
+                ? applications.length
+                  ? "No applications found"
+                  : "No applications yet"
                 : "No jobs yet"}
             </Text>
 
             <Text style={styles.emptyText}>
               {employerJobs.length
-                ? "Try another job type or search term."
+                ? applications.length
+                  ? "Try another job type or search term."
+                  : "Applicants will appear here when they apply to your listings."
                 : "Applicants will appear here when they apply to your listings."}
             </Text>
           </View>
@@ -269,5 +344,10 @@ const styles = StyleSheet.create({
     fontSize: theme.fontSize.small,
     lineHeight: 19,
     textAlign: "center",
+  },
+  errorText: {
+    color: theme.actions?.deletePrimary ?? "#B3261E",
+    fontSize: theme.fontSize.small,
+    paddingVertical: theme.spacing.small,
   },
 });

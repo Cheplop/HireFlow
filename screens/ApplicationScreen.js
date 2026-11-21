@@ -1,11 +1,11 @@
 import { useMemo, useState } from 'react';
-import { FlatList, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Search } from 'lucide-react-native';
 
-import { AuthInput } from '@/components/common/AuthInput';
 import ApplicationsCard from '@/components/employee/ApplicationsCard';
 import { PrimaryButton } from '@/components/common/PrimaryButton';
+import SearchRow from '@/components/common/SearchRow';
 import { useAuth } from '../contexts/AuthContext';
 import { useApplications } from '../contexts/ApplicationsContext';
 import { useJobs } from '../contexts/JobsContext';
@@ -22,8 +22,9 @@ export default function ApplicationScreen() {
     getApplicationsForEmployee,
     updateEmployeeApplication,
     withdrawApplication,
+    saveError,
   } = useApplications();
-  const employeeApplications = getApplicationsForEmployee(user.id);
+  const employeeApplications = user?.id ? getApplicationsForEmployee(user.id) : [];
 
   const filteredApplications = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -43,39 +44,45 @@ export default function ApplicationScreen() {
 
   return (
     <SafeAreaView style={styles.safeAreaView} edges={['top']}>
-      <View style={styles.search}>
-        <AuthInput
-          placeholder="Search applications..."
-          value={search}
-          onChangeText={setSearch}
-          autoCapitalize="none"
-          icon={<Search size={20} color="#abb0b7" />}
-        />
-      </View>
+      <SearchRow
+        placeholder="Search applications..."
+        value={search}
+        onChangeText={setSearch}
+        notificationLabel="View jobs"
+        onNotificationPress={() => {
+          if (router.canGoBack()) {
+            Alert.alert('Notifications', 'Notifications are not available yet.');
+          } else {
+            router.push('/');
+          }
+        }}
+      />
 
-      {/* Wrapping the horizontal ScrollView prevents it from expanding vertically */}
-      <View style={styles.filterWrapper}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filters}
-        >
-          {statusFilters.map((status) => (
-            <PrimaryButton
-              key={status}
-              title={status}
-              variant={selectedStatus === status ? 'active' : 'inactive'}
-              onPress={() => setSelectedStatus(status)}
-              style={styles.filterButton}
-            />
-          ))}
-        </ScrollView>
-      </View>
+      {/* Status Filters */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.filterScroll}
+        contentContainerStyle={styles.filters}
+      >
+        {statusFilters.map((status) => (
+          <PrimaryButton
+            key={status}
+            title={status}
+            variant={selectedStatus === status ? 'active' : 'inactive'}
+            onPress={() => setSelectedStatus(status)}
+            style={styles.filterButton}
+          />
+        ))}
+      </ScrollView>
 
+      {/* Application List */}
       <FlatList
         data={filteredApplications}
+        style={styles.applicationList}
         contentContainerStyle={styles.cards}
         showsVerticalScrollIndicator={false}
+        ListHeaderComponent={saveError ? <Text style={styles.errorText}>{saveError}</Text> : null}
         renderItem={({ item }) => (
           <ApplicationsCard
             application={item}
@@ -110,51 +117,65 @@ const styles = StyleSheet.create({
   safeAreaView: {
     flex: 1,
     backgroundColor: theme.colors.background,
+    paddingHorizontal: 20,
   },
-  search: {
-    height: 55,
-    paddingHorizontal: 22,
+
+  filterScroll: {
+    flexGrow: 0,
+    flexShrink: 0,
   },
-  filterWrapper: {
-    marginTop: theme.spacing.small,
-  },
+
   filters: {
-    gap: theme.spacing.small,
-    paddingHorizontal: 22,
-    paddingBottom: theme.spacing.small,
+    gap: 8,
+    paddingBottom: theme.spacing.medium,
   },
+
   filterButton: {
     width: 'auto',
-    minWidth: 75,
-    height: 36,
-    paddingHorizontal: 12,
+    minWidth: 84,
+    height: 34,
+    paddingHorizontal: 14,
     paddingVertical: 6,
-    borderRadius: theme.radius.large,
+    borderRadius: 17,
     borderColor: theme.colors.border,
   },
-  cards: {
-    gap: theme.spacing.medium,
-    paddingBottom: 130,
-    paddingHorizontal: 22,
-    paddingTop: theme.spacing.small,
-    flexGrow: 0, // Keeps cards anchored at the top when there are few items
+
+  applicationList: {
+    flex: 1,
   },
+
+  cards: {
+    gap: 12,
+    paddingBottom: 130,
+    paddingHorizontal: 2,
+    paddingTop: 2,
+    flexGrow: 1,
+  },
+
   emptyState: {
     alignItems: 'center',
     paddingHorizontal: theme.spacing.large,
     paddingTop: 64,
   },
+
   emptyTitle: {
     color: theme.fontColor.primary,
     fontWeight: '700',
     fontSize: theme.fontSize.large,
     textAlign: 'center',
   },
+
   emptyText: {
     color: theme.fontColor.secondary,
     fontSize: theme.fontSize.small,
     lineHeight: 19,
     marginTop: theme.spacing.small,
     textAlign: 'center',
+  },
+
+  errorText: {
+    color: theme.actions.deletePrimary,
+    fontSize: theme.fontSize.small,
+    paddingVertical: theme.spacing.small,
   },
 });

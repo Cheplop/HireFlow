@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, Platform, StyleSheet } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 import { File, Paths } from "expo-file-system";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import ProfileContent from "../components/profile/ProfileContent";
@@ -249,7 +249,7 @@ export default function ProfileScreen({
   const [profileLoadedFor, setProfileLoadedFor] = useState(null);
 
   // Load the selected employee's saved profile, or the application snapshot.
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     setProfileLoadedFor(null);
     setProfile(starter.profile);
     setEducation(starter.education);
@@ -267,7 +267,7 @@ export default function ProfileScreen({
       setProfile({
         ...starter.profile,
         ...(saved?.profile ?? {}),
-        email: saved?.profile?.email ?? starter.profile.email ?? saved?.email ?? "",
+        email: saved?.profile?.email ?? starter.profile.email ?? saved?.email ?? user?.email ?? "",
         phone:
           saved?.profile?.phone ??
           saved?.contactNumber ??
@@ -284,7 +284,7 @@ export default function ProfileScreen({
     return () => {
       cancelled = true;
     };
-  }, [ownerId, starter]);
+  }, [ownerId, starter, user?.email]));
 
   // Do not save an employer's read-only view or data before its owner loads.
   useEffect(() => {
@@ -300,7 +300,7 @@ export default function ProfileScreen({
   }, [canEdit, profileLoadedFor, ownerId, profile, education, experience, certificates, about]);
 
   // Load this account's saved photos.
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     let isMounted = true;
 
     const loadPhotos = async () => {
@@ -335,7 +335,7 @@ export default function ProfileScreen({
     return () => {
       isMounted = false;
     };
-  }, [photoStorageKey]);
+  }, [photoStorageKey]));
 
   const openEditor = (type, item = null) => {
     let values = {};
@@ -619,7 +619,7 @@ export default function ProfileScreen({
         onPhotoTarget={setPhotoTarget}
         onMenuPress={canEdit ? () => setIsMenuVisible(true) : undefined}
         onToggleEditing={() => setIsEditing((value) => !value)}
-        onEditProfile={() => openEditor("profile")}
+        onEditProfile={() => router.push("/profile-edit")}
         sections={sections}
         activeSection={activeSection}
         onSelectSection={setActiveSection}
