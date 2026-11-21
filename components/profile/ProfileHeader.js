@@ -13,6 +13,7 @@ export default function ProfileHeader({
   profile,
   coverUri,
   avatarUri,
+  avatarSource,
   isEditing,
   onPhotoTarget,
   onMenuPress,
@@ -29,19 +30,21 @@ export default function ProfileHeader({
           />
         ) : null}
 
-        <Pressable
-          style={styles.menuButton}
-          onPress={onMenuPress}
-          hitSlop={10}
-          accessibilityRole="button"
-          accessibilityLabel="Open profile menu"
-        >
-          <Ionicons
-            name="menu"
-            size={22}
-            color={theme.fontColor.dark}
+        {onMenuPress ? (
+          <Pressable
+            style={styles.menuButton}
+            onPress={onMenuPress}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel="Open profile menu"
+          >
+            <Ionicons
+              name="menu"
+              size={22}
+              color={theme.fontColor.dark}
             />
-        </Pressable>
+          </Pressable>
+        ) : null}
 
         {isEditing && (
           <Pressable
@@ -71,9 +74,9 @@ export default function ProfileHeader({
           accessibilityLabel="Edit profile photo"
           accessibilityState={{ disabled: !isEditing }}
         >
-          {avatarUri ? (
+          {avatarUri || avatarSource ? (
             <Image
-              source={{ uri: avatarUri }}
+              source={avatarUri ? { uri: avatarUri } : avatarSource}
               style={styles.avatarImage}
             />
           ) : (

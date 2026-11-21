@@ -1,11 +1,70 @@
 import { useRouter } from "expo-router";
 import { ChevronRight, GraduationCap } from "lucide-react-native";
 import { Image, Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useEffect, useState } from "react";
 import theme from "../../styles/theme";
 import StatusCard from "../common/StatusCard";
+import { getHighestEducationInstitution, loadSavedProfile } from "../../data/profileStorage";
 
-export default function ApplicantCard({ applicant, jobId, status }) {
+function formatLastFirstName(applicant) {
+  const first = applicant?.firstName?.trim();
+  const last = applicant?.lastName?.trim();
+
+  if (last && first) {
+    return `${first} ${last}`;
+  }
+  if (last || first) {
+    return last || first;
+  }
+
+  const fullName = applicant?.name?.trim();
+  if (!fullName) {
+    return "Applicant";
+  }
+
+  const parts = fullName.split(/\s+/);
+  if (parts.length === 1) {
+    return parts[0];
+  }
+
+  const lastName = parts.pop();
+  const firstName = parts.join(" ");
+  return `${firstName} ${lastName}`;
+}
+
+export default function ApplicantCard({ applicant, jobId, status, avatarSource }) {
   const router = useRouter();
+  const [displayName, setDisplayName] = useState(formatLastFirstName(applicant));
+  const [highestEducation, setHighestEducation] = useState(
+    getHighestEducationInstitution(applicant.education),
+  );
+  const image = avatarSource || applicant.avatar;
+  const source = typeof image === "string"
+    ? { uri: image }
+    : image || require("../../assets/images/Hireflow.png");
+
+  useEffect(() => {
+    let active = true;
+
+    if (!applicant.employeeId) return () => { active = false; };
+
+    loadSavedProfile(applicant.employeeId).then((savedProfile) => {
+      if (!active) return;
+      const firstName = savedProfile?.firstName?.trim() || savedProfile?.profile?.firstName?.trim();
+      const lastName = savedProfile?.lastName?.trim() || savedProfile?.profile?.lastName?.trim();
+      if (firstName || lastName) {
+        setDisplayName([firstName, lastName].filter(Boolean).join(" "));
+      } else if (savedProfile?.profile?.name?.trim()) {
+        setDisplayName(savedProfile.profile.name.trim());
+      }
+      setHighestEducation(
+        getHighestEducationInstitution(savedProfile?.education) ||
+          getHighestEducationInstitution(applicant.education),
+      );
+    });
+
+    return () => { active = false; };
+  }, [applicant.employeeId, applicant.education]);
 
   return (
     <TouchableOpacity
@@ -16,7 +75,7 @@ export default function ApplicantCard({ applicant, jobId, status }) {
     >
       <View style={styles.imageContainer}>
         <Image
-          source={applicant.avatar}
+          source={source}
           style={styles.image}
           resizeMode="cover"
         />
@@ -28,12 +87,12 @@ export default function ApplicantCard({ applicant, jobId, status }) {
           <Text style={styles.applyingForTitle}>{applicant.jobTitle}</Text>
         </Text>
         <Text style={styles.cardTitle} numberOfLines={1}>
-          {applicant.name}
+          {displayName}
         </Text>
         <View style={styles.educationRow}>
           <GraduationCap size={16} color={theme.fontColor.primary} />
           <Text style={styles.cardSubtitle} numberOfLines={1}>
-            {applicant.education || "Education not added"}
+            {highestEducation || "Education not added"}
           </Text>
         </View>
       </View>
@@ -121,16 +180,19 @@ const styles = StyleSheet.create({
     fontSize: theme.fontSize.small,
     color: theme.fontColor.secondary,
   },
+  appliedDate: {
+    color: theme.fontColor.secondary,
+    fontSize: 11,
+  },
   rightSection: {
-    position: "relative",
+    flexDirection: "column",
     justifyContent: "center",
     alignItems: "center",
-    width: 44,
+    width: 36,
+    gap: 12,
     alignSelf: "stretch",
   },
   chevron: {
-    position: "absolute",
-    top: 0,
-    right: -2,
+    flexShrink: 0,
   },
 });

@@ -59,7 +59,12 @@ function BasicInformationScreen() {
     // Only replace the profile name if something was typed.
     if (name) {
       const saved = await loadSavedProfile(user?.id);
-      patch.profile = { location: saved?.profile?.location ?? "", name };
+      patch.profile = {
+        location: saved?.profile?.location ?? "",
+        name,
+        firstName: values.fullName.trim(),
+        lastName: values.lastName.trim(),
+      };
     }
 
     await saveProfileData(user?.id, patch);

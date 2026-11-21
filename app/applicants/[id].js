@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { StyleSheet, Text, View } from "react-native";
+import { ChevronLeft } from "lucide-react-native";
+import { Alert, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { PrimaryButton } from "@/components/common/PrimaryButton";
@@ -24,6 +25,7 @@ export default function ApplicantDetails() {
   const requestedJobId = Array.isArray(jobId) ? jobId[0] : jobId;
   const status = application?.status;
   const [error, setError] = useState("");
+  const [isUpdating, setIsUpdating] = useState(false);
   const profileFallback = getApplicantStarterProfile(applicant);
 
   if (
@@ -41,49 +43,86 @@ export default function ApplicantDetails() {
     );
   }
 
-  function updateStatus(nextStatus) {
+  async function updateStatus(nextStatus) {
+    setError("");
+    setIsUpdating(true);
     try {
-      setApplicationStatus(application.id, user.id, nextStatus);
-      setError("");
+      await setApplicationStatus(application.id, user.id, nextStatus);
     } catch (updateError) {
-      setError(updateError.message);
+      setError(
+        updateError instanceof Error
+          ? updateError.message
+          : "Could not update this application. Please try again.",
+      );
+    } finally {
+      setIsUpdating(false);
     }
+  }
+
+  function confirmStatus(nextStatus) {
+    const commit = () => { void updateStatus(nextStatus); };
+    const message = `Are you sure you want to ${nextStatus.toLowerCase()} ${applicant.name || "this application"}?`;
+    if (Platform.OS === "web") {
+      if (typeof window !== "undefined" && window.confirm(message)) commit();
+      return;
+    }
+    Alert.alert(`${nextStatus} application`, message, [
+      { text: "Cancel", style: "cancel" },
+      { text: nextStatus, style: nextStatus === "Declined" ? "destructive" : "default", onPress: commit },
+    ]);
   }
 
   const headerContent = (
     <View style={styles.header}>
-      <PrimaryButton
-        title="Back"
-        variant="inactive"
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Go back to applicants"
         onPress={() => router.back()}
         style={styles.backButton}
-      />
-      <Text style={styles.heading} numberOfLines={1}>
-        Applicant Profile
-      </Text>
+      >
+        <ChevronLeft size={24} color={theme.fontColor.primary} />
+      </Pressable>
     </View>
   );
 
   const footerContent = (
     <View style={styles.applicationFooter}>
+      <View style={styles.applicationInfo}>
+        <Text style={styles.sectionTitle}>Application</Text>
+        <Text style={styles.infoText}>Job: {job.jobTitle || "Job listing"}</Text>
+        <Text style={styles.infoText}>
+          Applied: {application.appliedAt ? new Date(application.appliedAt).toLocaleDateString() : "Date unavailable"}
+        </Text>
+        <Text style={styles.infoText}>Cover letter</Text>
+        <Text style={styles.coverLetter}>{application.coverLetter || "No cover letter was submitted."}</Text>
+        <PrimaryButton
+          title="View job listing"
+          variant="inactive"
+          onPress={() => router.push(`/jobDetails/${job.id}`)}
+          style={styles.jobButton}
+        />
+      </View>
       <View style={styles.statusRow}>
         <View style={styles.statusTextContainer}>
           <Text style={styles.statusLabel}>Application status</Text>
-          <Text style={styles.statusJob}>{job.jobTitle}</Text>
+          <Text style={styles.statusJob}>{status}</Text>
         </View>
         <StatusCard status={status} />
       </View>
-      <View style={styles.actions}>
-        {["Pending", "Accepted", "Declined", "Completed"].map((nextStatus) => (
-          <PrimaryButton
-            key={nextStatus}
-            title={nextStatus}
-            variant={status === nextStatus ? "active" : "inactive"}
-            onPress={() => updateStatus(nextStatus)}
-            style={styles.actionButton}
-          />
-        ))}
-      </View>
+      {status === "Pending" || status === "Accepted" ? (
+        <View style={styles.actions}>
+          {(status === "Pending" ? ["Accepted", "Declined"] : ["Completed"]).map((nextStatus) => (
+            <PrimaryButton
+              key={nextStatus}
+              title={isUpdating ? "Saving…" : nextStatus === "Accepted" ? "Accept" : nextStatus === "Declined" ? "Decline" : "Mark completed"}
+              variant={nextStatus === "Declined" ? "secondary" : "active"}
+              onPress={() => confirmStatus(nextStatus)}
+              disabled={isUpdating}
+              style={styles.actionButton}
+            />
+          ))}
+        </View>
+      ) : null}
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
     </View>
   );
@@ -113,9 +152,12 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.medium,
   },
   backButton: {
-    width: 90,
-    height: 36,
-    paddingVertical: 6,
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 20,
+    backgroundColor: theme.colors.cardBackground,
   },
   heading: {
     color: theme.fontColor.primary,
@@ -127,6 +169,20 @@ const styles = StyleSheet.create({
     gap: theme.spacing.medium,
     marginTop: theme.spacing.medium,
   },
+  applicationInfo: {
+    gap: 8,
+    padding: theme.spacing.medium,
+    borderRadius: theme.radius.large,
+    backgroundColor: theme.colors.cardBackground,
+  },
+  sectionTitle: {
+    color: theme.fontColor.primary,
+    fontSize: theme.fontSize.medium,
+    fontWeight: "700",
+  },
+  infoText: { color: theme.fontColor.secondary, fontSize: theme.fontSize.small },
+  coverLetter: { color: theme.fontColor.primary, fontSize: theme.fontSize.small, lineHeight: 20 },
+  jobButton: { marginTop: 4 },
   statusRow: {
     flexDirection: "row",
     alignItems: "center",

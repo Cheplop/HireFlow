@@ -10,6 +10,9 @@ export function ApplicantsProvider({ children }) {
     getApplicationsForJob,
     getApplicationById,
     setApplicationStatus,
+    hasLoadedApplications,
+    loadError,
+    saveError,
   } = useApplications();
 
   const { getJobById } = useJobs();
@@ -26,6 +29,8 @@ export function ApplicantsProvider({ children }) {
         jobId: application.jobId,
         status: application.status,
         coverLetter: application.coverLetter || "",
+        appliedAt: application.appliedAt || null,
+        employeeId: application.employeeId,
       }));
     },
     [getApplicationsForJob, getJobById],
@@ -61,6 +66,9 @@ export function ApplicantsProvider({ children }) {
         getApplicantsByJob,
         getStatus,
         updateApplicationStatus,
+        hasLoadedApplications,
+        loadError,
+        saveError,
       }}
     >
       {children}

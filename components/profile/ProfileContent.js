@@ -11,7 +11,8 @@ const GROUP_ORDER = ["Tertiary", "Secondary", "Primary"];
 
 export default function ProfileContent(props) {
   const {
-    profile, coverUri, avatarUri, isEditing, onPhotoTarget, onToggleEditing,
+    profile, coverUri, avatarUri, avatarSource, isEditing, canEdit,
+    headerContent, footerContent, onPhotoTarget, onToggleEditing,
     onEditProfile, onMenuPress, sections, activeSection, onSelectSection,
     filteredEducation, educationEmpty, filteredExperience, experienceEmpty,
     filteredCertificates, certificatesEmpty, about, styles, onAdd, onEdit,
@@ -27,8 +28,6 @@ export default function ProfileContent(props) {
     ) : null;
 
   const renderEducation = () => {
-    if (educationEmpty) return <Text style={styles.emptyText}>No education added yet.</Text>;
-
     const groups = [
       ...GROUP_ORDER,
       ...new Set(filteredEducation.map((e) => e.group).filter((g) => !GROUP_ORDER.includes(g))),
@@ -37,6 +36,7 @@ export default function ProfileContent(props) {
     return (
       <>
         <AddButton type="education" label="Add education" />
+        {educationEmpty && <Text style={styles.emptyText}>No education added yet.</Text>}
         {groups.map((group) => {
           const items = filteredEducation.filter((e) => e.group === group);
           if (!items.length) return null;
@@ -102,6 +102,9 @@ export default function ProfileContent(props) {
   const renderAbout = () => (
     <View style={styles.aboutCard}>
       <Text style={styles.aboutTitle}>About me</Text>
+      {!!profile.email && <Text style={styles.aboutText}>Email: {profile.email}</Text>}
+      {!!profile.phone && <Text style={styles.aboutText}>Contact: {profile.phone}</Text>}
+      {!!profile.location && <Text style={styles.aboutText}>Address: {profile.location}</Text>}
       <Text style={styles.aboutText}>{about.text || "Nothing here yet."}</Text>
       <View style={styles.skills}>
         {about.skills.map((s) => (
@@ -124,30 +127,32 @@ export default function ProfileContent(props) {
 
   return (
     <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      {headerContent}
       <ProfileHeader
         profile={profile}
         coverUri={coverUri}
         avatarUri={avatarUri}
+        avatarSource={avatarSource}
         isEditing={isEditing}
         onPhotoTarget={onPhotoTarget}
         onMenuPress={onMenuPress}
       />
 
-      <View style={[styles.profileActions, { justifyContent: "flex-start", marginTop: 0, marginBottom: 14 }]}>
-        <Pressable style={[styles.actionButton]} onPress={onToggleEditing}>
-          <Ionicons
-            name={isEditing ? "checkmark" : "create-outline"}
-            size={13}
-            color={theme.actions.editPrimary}
-          />
-          <Text style={styles.actionText}>{isEditing ? "Done" : "Edit profile"}</Text>
-        </Pressable>
-        {isEditing && (
-          <Pressable style={styles.actionButton} onPress={onEditProfile}>
-            <Text style={styles.actionText}>Name & location</Text>
+      {canEdit && (
+        <View style={[styles.profileActions, { justifyContent: "flex-start", marginTop: 0, marginBottom: 14 }]}>
+          <Pressable style={[styles.actionButton]} onPress={onToggleEditing}>
+            <Ionicons
+              name={isEditing ? "checkmark" : "create-outline"}
+              size={13}
+              color={theme.actions.editPrimary}
+            />
+            <Text style={styles.actionText}>{isEditing ? "Done editing entries" : "Edit entries"}</Text>
           </Pressable>
-        )}
-      </View>
+          <Pressable style={styles.actionButton} onPress={onEditProfile}>
+            <Text style={styles.actionText}>Edit profile</Text>
+          </Pressable>
+        </View>
+      )}
 
       <SectionTabs sections={sections} active={activeSection} onSelect={onSelectSection} />
 
@@ -157,6 +162,7 @@ export default function ProfileContent(props) {
         {activeSection === "Licenses & Cert" && renderCertificates()}
         {activeSection === "About" && renderAbout()}
       </View>
+      {footerContent}
     </ScrollView>
   );
 }

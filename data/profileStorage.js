@@ -24,16 +24,31 @@ export async function loadSavedProfile(userId) {
 // Merges `patch` into whatever is already saved for this account.
 export async function saveProfileData(userId, patch) {
   if (!userId) return;
+  const current = (await loadSavedProfile(userId)) || {};
+  await AsyncStorage.setItem(
+    profileKey(userId),
+    JSON.stringify({ ...current, ...patch }),
+  );
+}
 
-  try {
-    const current = (await loadSavedProfile(userId)) || {};
-    await AsyncStorage.setItem(
-      profileKey(userId),
-      JSON.stringify({ ...current, ...patch }),
-    );
-  } catch {
-    // Saving is best-effort; the screens still work without it.
+// Education is stored as grouped entries. Tertiary is the highest attainment
+// used by the applicant card, followed by secondary, primary, and other.
+export function getHighestEducationInstitution(education) {
+  if (Array.isArray(education)) {
+    const rank = { Tertiary: 4, Secondary: 3, Primary: 2, Other: 1 };
+    const entries = education
+      .filter((entry) => entry && typeof entry.title === "string" && entry.title.trim())
+      .sort((a, b) => (rank[b.group] || 0) - (rank[a.group] || 0));
+
+    return entries[0]?.title.trim() || "";
   }
+
+  if (typeof education === "string" && education.trim()) {
+    const legacyInstitution = education.split(",")[1]?.replace(/\s*\([^)]*\)\s*$/, "").trim();
+    return legacyInstitution || education.trim();
+  }
+
+  return "";
 }
 
 // What a profile looks like before anything has been saved.
