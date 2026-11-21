@@ -4,13 +4,10 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useRef,
   useState,
 } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { applicants as seedApplicants } from "../data/applicants";
-import { work } from "../data/jobs";
 import { useAuth } from "./AuthContext";
 import { useJobs } from "./JobsContext";
 
@@ -18,70 +15,35 @@ const ApplicationsContext = createContext(null);
 const APPLICATIONS_STORAGE_KEY = "hireflow.applications";
 
 export function ApplicationsProvider({ children }) {
-  const { user } = useAuth();
-  const { getJobById } = useJobs();
+  const { user, isKnownUserId } = useAuth();
+  const { getJobById, hasLoadedJobs } = useJobs();
 
-  // Seed existing sample applications
-  const seededApplications = seedApplicants.flatMap((applicant) =>
-    applicant.appliedJobIds.map((jobId) => ({
-      jobId,
-      employeeId: `seed-${applicant.id}`,
-      applicant,
-      status: applicant.applicationStatuses[jobId] || "Pending",
-      coverLetter: "",
-      appliedAt: null,
-    })),
-  );
-
-  // Preserve existing legacy applications
-  const legacyApplications = work
-    .filter((job) => job.status)
-    .map((job) => ({
-      jobId: job.id,
-      employeeId: "remiel",
-      applicant: {
-        id: "remiel",
-        name: "Remiel",
-        avatar: require("../assets/images/Hireflow.png"),
-        education: "",
-        experience: "",
-        skills: [],
-        contactEmail: "",
-        contactPhone: "",
-        about: "",
-      },
-      status: job.status,
-      coverLetter: "",
-      appliedAt: null,
-    }));
-
-  const initialApplications = [
-    ...seededApplications,
-    ...legacyApplications,
-  ].map((application, index) => ({
-    ...application,
-    id: index + 1,
-  }));
+  // Applications are created only by a real local account. Bundled job data
+  // is intentionally not accompanied by fake application records.
+  const initialApplications = [];
 
   const [applications, setApplications] = useState(initialApplications);
   const [hasLoadedApplications, setHasLoadedApplications] = useState(false);
   const [loadError, setLoadError] = useState("");
   const [saveError, setSaveError] = useState("");
-  const nextApplicationId = useRef(initialApplications.length + 1);
 
   useEffect(() => {
     let cancelled = false;
+    if (!hasLoadedJobs) return () => { cancelled = true; };
     AsyncStorage.getItem(APPLICATIONS_STORAGE_KEY)
-      .then((stored) => {
+      .then(async (stored) => {
         if (!stored || cancelled) return;
         const savedApplications = JSON.parse(stored);
         if (!Array.isArray(savedApplications)) return;
+        const validApplications = [];
+        for (const item of savedApplications) {
+          if (!item?.id || !item?.employeeId || !item?.jobId) continue;
+          if (!getJobById(item.jobId)) continue;
+          if (!(await isKnownUserId(item.employeeId))) continue;
+          validApplications.push(item);
+        }
         if (!cancelled) {
-          setApplications(savedApplications);
-          nextApplicationId.current = Math.max(
-            ...savedApplications.map((item) => Number(item.id) || 0),
-            0,
-          ) + 1;
+          setApplications(validApplications);
         }
       })
       .catch(() => {
@@ -91,7 +53,7 @@ export function ApplicationsProvider({ children }) {
         if (!cancelled) setHasLoadedApplications(true);
       });
     return () => { cancelled = true; };
-  }, []);
+  }, [getJobById, hasLoadedJobs, isKnownUserId]);
 
   useEffect(() => {
     if (!hasLoadedApplications) return;
@@ -110,6 +72,10 @@ export function ApplicationsProvider({ children }) {
   const applyForJob = useCallback(
     (jobId, user, coverLetter) => {
       const job = getJobById(jobId);
+
+      if (!hasLoadedApplications) {
+        throw new Error("Applications are still loading. Please try again.");
+      }
 
       if (user?.role !== "employee" || !job?.isPublished) {
         throw new Error("This job is not available for your account.");
@@ -138,12 +104,13 @@ export function ApplicationsProvider({ children }) {
       }
 
       const application = {
-        id: nextApplicationId.current,
+        id: `application-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         jobId: job.id,
         employeeId: user.id,
         applicant: {
           id: user.id,
           name: user.username,
+          email: user.email,
           avatar: require("../assets/images/Hireflow.png"),
           education: "",
           experience: "",
@@ -157,13 +124,11 @@ export function ApplicationsProvider({ children }) {
         appliedAt: new Date().toISOString(),
       };
 
-      nextApplicationId.current += 1;
-
       setApplications((current) => [...current, application]);
 
       return application;
     },
-    [applications, getJobById],
+    [applications, getJobById, hasLoadedApplications],
   );
 
   // Get one employee's application for a specific job

@@ -8,6 +8,7 @@ import { AuthInput } from '../../../components/common/AuthInput';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useApplications } from '../../../contexts/ApplicationsContext';
 import { useJobs } from '../../../contexts/JobsContext';
+import theme from '../../../styles/theme';
 
 const brandColor = '#4B5694';
 const employmentTypes = ['Full-time', 'Part-time', 'Contractual'];
@@ -134,7 +135,7 @@ export default function Posts() {
                         <Text
                          style={[
                             styles.statusBadge,
-                            item.isPublished ? styles.statusOPen : styles.statusClosed,
+                            item.isPublished ? styles.statusOpen : styles.statusClosed,
                          ]}   
                         >
                             {item.isPublished ? 'Open' : 'Closed'}
@@ -261,30 +262,34 @@ export default function Posts() {
                                     keyboardType="decimal-pad"
                                 />
 
+                                <View style={styles.tabSection}>
                                 <Text style={styles.inputLabel}>Employment type</Text>
-                                <View style={styles.optionRow}>
+                                <View style={styles.tabRow}>
                                     {employmentTypes.map((type) => (
                                         <PrimaryButton
                                             key={type}
                                             title={type}
                                             variant={employmentType === type ? 'active' : 'inactive'}
                                             onPress={() => setEmploymentType(type)}
-                                            style={styles.optionButton}
+                                            style={styles.tabButton}
                                         />
                                     ))}
                                 </View>
+                                </View>
 
+                                <View style={styles.tabSection}>
                                 <Text style={styles.inputLabel}>Work mode</Text>
-                                <View style={styles.optionRow}>
+                                <View style={styles.tabRow}>
                                     {workModes.map((mode) => (
                                         <PrimaryButton
                                             key={mode}
                                             title={mode}
                                             variant={workMode === mode ? 'active' : 'inactive'}
                                             onPress={() => setWorkMode(mode)}
-                                            style={styles.optionButton}
+                                            style={styles.tabButton}
                                         />
                                     ))}
+                                </View>
                                 </View>
                             </View>
 
@@ -331,7 +336,7 @@ export default function Posts() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F7F8FC',
+        backgroundColor: theme.colors.background,
     },
 
     listContent: {
@@ -341,13 +346,13 @@ const styles = StyleSheet.create({
 
     screenTitle: {
         fontSize: 26,
-        fontWeight: '700',
-        color: '#252A40',
+        fontWeight: theme.fontWeight.bold,
+        color: theme.fontColor.primary,
     },
 
     screenSubtitle: {
         fontSize: 14,
-        color: '#777D90',
+        color: theme.fontColor.secondary,
         marginTop: 5,
         marginBottom: 22,
     },
@@ -355,21 +360,21 @@ const styles = StyleSheet.create({
     formCard: {
         backgroundColor: '#FFFFFF',
         padding: 18,
-        borderRadius: 16,
+        borderRadius: theme.radius.medium,
         borderWidth: 1,
-        borderColor: '#E9EBF3',
+        borderColor: theme.colors.border,
         gap: 12,
     },
 
     formTitle: {
         fontSize: 20,
         fontWeight: '700',
-        color: '#252A40',
+        color: theme.fontColor.primary,
     },
 
     formSubtitle: {
         fontSize: 13,
-        color: '#777D90',
+        color: theme.fontColor.secondary,
         marginTop: -5,
     },
 
@@ -389,16 +394,26 @@ const styles = StyleSheet.create({
         minHeight: 100,
     },
 
-    optionRow: {
+    tabSection: {
+        gap: 8,
+        padding: 10,
+        borderRadius: theme.radius.medium,
+        backgroundColor: theme.colors.mutedBackground,
+    },
+
+    tabRow: {
         flexDirection: 'row',
         flexWrap: 'wrap',
         gap: 8,
     },
 
-    optionButton: {
+    tabButton: {
+        flexGrow: 1,
+        flexBasis: 100,
         width: 'auto',
         paddingHorizontal: 10,
         paddingVertical: 8,
+        borderRadius: theme.radius.small,
     },
 
     formButton: {
@@ -441,9 +456,9 @@ const styles = StyleSheet.create({
     postCard: {
         backgroundColor: '#FFFFFF',
         padding: 14,
-        borderRadius: 12,
+        borderRadius: theme.radius.medium,
         borderWidth: 1,
-        borderColor: '#E9EBF3',
+        borderColor: theme.colors.border,
         gap: 14,
     },
 

@@ -190,8 +190,13 @@ export function AuthProvider({ children }) {
         };
       }
 
+      let id = `user-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      while (accounts.some((item) => item.id === id)) {
+        id = `user-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      }
+
       const account = {
-        id: `user-${Date.now()}`,
+        id,
         username,
         email,
         password: details.password,
@@ -226,9 +231,15 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  const isKnownUserId = useCallback(async (userId) => {
+    if (!userId) return false;
+    const accounts = await getAllAccounts();
+    return accounts.some((account) => account.id === userId);
+  }, []);
+
   const value = useMemo(
-    () => ({ user, isLoading, login, register, logout }),
-    [user, isLoading, login, register, logout],
+    () => ({ user, isLoading, login, register, logout, isKnownUserId }),
+    [user, isLoading, login, register, logout, isKnownUserId],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

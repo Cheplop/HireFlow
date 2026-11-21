@@ -1,13 +1,49 @@
-import { createContext, useCallback, useContext, useRef, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { work } from "../data/jobs";
 
 const JobsContext = createContext(null);
+const JOBS_STORAGE_KEY = "hireflow.jobs";
+
+function isValidJob(job) {
+  return job && job.id != null && typeof job.employerId === "string";
+}
 
 export function JobsProvider({ children }) {
   const [jobs, setJobs] = useState(work);
+  const [hasLoadedJobs, setHasLoadedJobs] = useState(false);
   const nextJobId = useRef(
     Math.max(0, ...work.map((job) => Number(job.id) || 0)) + 1,
   );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    AsyncStorage.getItem(JOBS_STORAGE_KEY)
+      .then((stored) => {
+        if (cancelled || !stored) return;
+        try {
+          const savedJobs = JSON.parse(stored);
+          if (!Array.isArray(savedJobs)) return;
+          const validJobs = savedJobs.filter(isValidJob);
+          setJobs(validJobs);
+          nextJobId.current = Math.max(0, ...validJobs.map((job) => Number(job.id) || 0)) + 1;
+        } catch {
+          // Keep bundled jobs when local data is malformed.
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setHasLoadedJobs(true);
+      });
+
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    if (!hasLoadedJobs) return;
+    AsyncStorage.setItem(JOBS_STORAGE_KEY, JSON.stringify(jobs)).catch(() => {});
+  }, [hasLoadedJobs, jobs]);
 
   const getJobById = useCallback(
     (jobId) => jobs.find((job) => String(job.id) === String(jobId)),
@@ -91,6 +127,7 @@ export function JobsProvider({ children }) {
     <JobsContext.Provider
       value={{
         jobs,
+        hasLoadedJobs,
         getJobById,
         getJobsForEmployer,
         toggleJobAvailability,
