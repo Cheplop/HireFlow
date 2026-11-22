@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
-import { Alert, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Linking, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { PrimaryButton } from "@/components/common/PrimaryButton";
@@ -12,6 +12,8 @@ import { useApplications } from "../../contexts/ApplicationsContext";
 import { useJobs } from "../../contexts/JobsContext";
 import { getApplicantStarterProfile } from "../../data/profileStorage";
 import theme from "../../styles/theme";
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function ApplicantDetails() {
   const { id, jobId } = useLocalSearchParams();
@@ -26,7 +28,13 @@ export default function ApplicantDetails() {
   const status = application?.status;
   const [error, setError] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
-  const profileFallback = getApplicantStarterProfile(applicant);
+  // Keep the fallback snapshot stable when returning from the external mail app.
+  const profileFallback = useMemo(
+    () => getApplicantStarterProfile(applicant),
+    // The application id identifies the immutable applicant snapshot.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [application?.id],
+  );
 
   if (
     user?.role !== "employer" ||
@@ -56,6 +64,38 @@ export default function ApplicantDetails() {
       );
     } finally {
       setIsUpdating(false);
+    }
+  }
+
+  async function openApplicantEmail(type) {
+    const contactEmail = applicant.contactEmail || profileFallback?.profile?.email;
+    if (!contactEmail || !EMAIL_PATTERN.test(contactEmail.trim())) {
+      setError("This applicant must have a valid contact email before they can be contacted.");
+      return;
+    }
+
+    const isOffer = type === "offer";
+    const subject = encodeURIComponent(
+      isOffer
+        ? `Job Offer: ${job.jobTitle} at ${job.jobCompany}`
+        : `Interview Invitation: ${job.jobTitle} at ${job.jobCompany}`,
+    );
+    const body = encodeURIComponent(
+      isOffer
+        ? `Hi ${applicant.name || "there"},\n\nCongratulations! We are pleased to offer you the position of ${job.jobTitle} at ${job.jobCompany}.\n\nPlease reply to this email to confirm your acceptance and discuss next steps.\n\nBest regards,\n${user.username || "The hiring team"}`
+        : `Hi ${applicant.name || "there"},\n\nWe would like to invite you for an interview for the ${job.jobTitle} position at ${job.jobCompany}. Please reply with your available dates and times.\n\nBest regards,\n${user.username || "The hiring team"}`,
+    );
+
+    try {
+      const mailtoUrl = `mailto:${contactEmail}?subject=${subject}&body=${body}`;
+      if (!(await Linking.canOpenURL(mailtoUrl))) {
+        setError("No email app (such as Gmail) is available on this device.");
+        return;
+      }
+      await Linking.openURL(mailtoUrl);
+      setError("");
+    } catch {
+      setError("Could not open email app.");
     }
   }
 
@@ -122,6 +162,19 @@ export default function ApplicantDetails() {
             />
           ))}
         </View>
+      ) : null}
+      {status === "Pending" ? (
+        <PrimaryButton
+          title="Invite to Interview via Gmail"
+          variant="inactive"
+          onPress={() => openApplicantEmail("interview")}
+        />
+      ) : null}
+      {status === "Accepted" ? (
+        <PrimaryButton
+          title="Send Job Offer via Gmail"
+          onPress={() => openApplicantEmail("offer")}
+        />
       ) : null}
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
     </View>
