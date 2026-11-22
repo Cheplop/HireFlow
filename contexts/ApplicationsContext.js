@@ -115,7 +115,7 @@ export function ApplicationsProvider({ children }) {
           education: "",
           experience: "",
           skills: [],
-          contactEmail: "",
+          contactEmail: user.email,
           contactPhone: "",
           about: "",
         },

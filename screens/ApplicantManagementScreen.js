@@ -1,4 +1,4 @@
-import { LogOut, Users } from "lucide-react-native";
+import { Menu, Search, Users } from "lucide-react-native";
 import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
@@ -16,8 +16,9 @@ import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import ApplicantCard from "@/components/employer/ApplicantCard";
+import { AuthInput } from "@/components/common/AuthInput";
 import { PrimaryButton } from "@/components/common/PrimaryButton";
-import SearchRow from "@/components/common/SearchRow";
+import ProfileMenu from "../components/profile/ProfileMenu";
 import { useAuth } from "../contexts/AuthContext";
 import { useApplicants } from "../contexts/ApplicantsContext";
 import { useJobs } from "../contexts/JobsContext";
@@ -60,6 +61,7 @@ export default function ApplicantManagementScreen() {
   const [selectedJobMode, setSelectedJobMode] = useState(jobModes[0]);
   const [profilePhotos, setProfilePhotos] = useState({});
   const [photoLoadError, setPhotoLoadError] = useState("");
+  const [isMenuVisible, setIsMenuVisible] = useState(false);
 
   const { user, logout } = useAuth();
   const router = useRouter();
@@ -192,15 +194,26 @@ export default function ApplicantManagementScreen() {
 
   return (
     <SafeAreaView style={styles.safeAreaView} edges={["top"]}>
-      <SearchRow
-        placeholder="Search keywords here..."
-        value={search}
-        onChangeText={setSearch}
-        notificationLabel="Notifications"
-        onNotificationPress={() =>
-          Alert.alert("Notifications", "Notifications are not available yet.")
-        }
-      />
+      <View style={styles.searchRow}>
+        <AuthInput
+          placeholder="Search keywords here..."
+          value={search}
+          onChangeText={setSearch}
+          autoCapitalize="none"
+          style={styles.searchInput}
+          inputStyle={styles.searchInputField}
+          rightIcon={<Search size={20} color={theme.fontColor.primary} />}
+        />
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Open menu"
+          onPress={() => setIsMenuVisible(true)}
+          style={styles.menuButton}
+        >
+          <Menu size={24} color={theme.fontColor.primary} />
+        </Pressable>
+      </View>
 
       {/* Job Type Filters & Logout */}
       <View style={styles.toolbarRow}>
@@ -221,18 +234,6 @@ export default function ApplicantManagementScreen() {
           ))}
         </ScrollView>
 
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Log out"
-          onPress={handleLogout}
-          style={({ pressed }) => [
-            styles.logoutButton,
-            pressed && styles.logoutButtonPressed,
-          ]}
-        >
-          <LogOut size={14} color={theme.actions?.deletePrimary ?? "#B3261E"} />
-          <Text style={styles.logoutText}>Log out</Text>
-        </Pressable>
       </View>
 
       {/* Applicant List */}
@@ -282,6 +283,16 @@ export default function ApplicantManagementScreen() {
           </View>
         }
       />
+
+      <ProfileMenu
+        visible={isMenuVisible}
+        onClose={() => setIsMenuVisible(false)}
+        onNotifications={() => {
+          setIsMenuVisible(false);
+          router.push("/notifications");
+        }}
+        onLogout={handleLogout}
+      />
     </SafeAreaView>
   );
 }
@@ -298,6 +309,48 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     paddingBottom: theme.spacing.medium,
+  },
+  searchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 12,
+    marginBottom: theme.spacing.medium,
+  },
+  searchInput: {
+    flex: 1,
+    marginBottom: 0,
+  },
+  searchInputField: {
+    height: 44,
+    paddingVertical: 0,
+    paddingRight: 42,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: 22,
+    backgroundColor: theme.colors.cardBackground,
+    fontSize: theme.fontSize.xsmall,
+    shadowColor: theme.colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  menuButton: {
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: 22,
+    backgroundColor: theme.colors.cardBackground,
+    flexShrink: 0,
+    shadowColor: theme.colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
   },
 
   filterScroll: {

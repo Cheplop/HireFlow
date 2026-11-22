@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
-import { Alert, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Linking, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { PrimaryButton } from "@/components/common/PrimaryButton";
@@ -10,8 +10,11 @@ import ProfileScreen from "../../screens/ProfileScreen";
 import { useAuth } from "../../contexts/AuthContext";
 import { useApplications } from "../../contexts/ApplicationsContext";
 import { useJobs } from "../../contexts/JobsContext";
+import { useNotifications } from "../../contexts/NotificationsContext";
 import { getApplicantStarterProfile } from "../../data/profileStorage";
 import theme from "../../styles/theme";
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function ApplicantDetails() {
   const { id, jobId } = useLocalSearchParams();
@@ -19,6 +22,7 @@ export default function ApplicantDetails() {
   const { user } = useAuth();
   const { getApplicationById, setApplicationStatus } = useApplications();
   const { getJobById } = useJobs();
+  const { addNotification } = useNotifications();
   const application = getApplicationById(id);
   const applicant = application?.applicant;
   const job = application && getJobById(application.jobId);
@@ -48,6 +52,12 @@ export default function ApplicantDetails() {
     setIsUpdating(true);
     try {
       await setApplicationStatus(application.id, user.id, nextStatus);
+      addNotification({
+        userId: application.employeeId,
+        title: `Application ${nextStatus}`,
+        message: `Your application for ${job.jobTitle} at ${job.jobCompany} is now ${nextStatus.toLowerCase()}.`,
+        relatedId: application.id,
+      });
     } catch (updateError) {
       setError(
         updateError instanceof Error
@@ -56,6 +66,44 @@ export default function ApplicantDetails() {
       );
     } finally {
       setIsUpdating(false);
+    }
+  }
+
+  async function openApplicantEmail(type) {
+    const contactEmail = applicant.contactEmail || profileFallback?.contactEmail;
+    if (!contactEmail || !EMAIL_PATTERN.test(contactEmail.trim())) {
+      setError("This applicant must have a valid contact email before they can be contacted.");
+      return;
+    }
+
+    const isOffer = type === "offer";
+    const subject = encodeURIComponent(
+      isOffer
+        ? `Job Offer: ${job.jobTitle} at ${job.jobCompany}`
+        : `Interview Invitation: ${job.jobTitle} at ${job.jobCompany}`,
+    );
+    const body = encodeURIComponent(
+      isOffer
+        ? `Hi ${applicant.name || "there"},\n\nCongratulations! We are pleased to offer you the position of ${job.jobTitle} at ${job.jobCompany}.\n\nPlease reply to this email to confirm your acceptance and discuss next steps.\n\nBest regards,\n${user.username || "The hiring team"}`
+        : `Hi ${applicant.name || "there"},\n\nWe would like to invite you for an interview for the ${job.jobTitle} position at ${job.jobCompany}. Please reply with your available dates and times.\n\nBest regards,\n${user.username || "The hiring team"}`,
+    );
+    const mailtoUrl = `mailto:${contactEmail}?subject=${subject}&body=${body}`;
+
+    try {
+      if (!(await Linking.canOpenURL(mailtoUrl))) {
+        setError("No email app (such as Gmail) is available on this device.");
+        return;
+      }
+      await Linking.openURL(mailtoUrl);
+      addNotification({
+        userId: application.employeeId,
+        title: isOffer ? "Job offer sent" : "Interview invitation sent",
+        message: `${isOffer ? "A job offer" : "An interview invitation"} was sent for ${job.jobTitle} at ${job.jobCompany}.`,
+        relatedId: application.id,
+      });
+      setError("");
+    } catch {
+      setError("Could not open email app.");
     }
   }
 
@@ -122,6 +170,19 @@ export default function ApplicantDetails() {
             />
           ))}
         </View>
+      ) : null}
+      {status === "Pending" ? (
+        <PrimaryButton
+          title="Invite to Interview via Gmail"
+          variant="inactive"
+          onPress={() => openApplicantEmail("interview")}
+        />
+      ) : null}
+      {status === "Accepted" ? (
+        <PrimaryButton
+          title="Send Job Offer via Gmail"
+          onPress={() => openApplicantEmail("offer")}
+        />
       ) : null}
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
     </View>
