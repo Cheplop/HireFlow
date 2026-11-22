@@ -662,7 +662,7 @@ export default function ProfileScreen({
           <ProfileMenu
             visible={isMenuVisible}
             onClose={() => setIsMenuVisible(false)}
-            onNotifications={() => Alert.alert("Notifications", "Notifications are not available yet.")}
+            onNotifications={() => router.push("/notifications")}
             onLogout={async () => {
               await logout();
               router.replace("/");

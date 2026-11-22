@@ -69,7 +69,7 @@ export default function HomeScreen() {
         onChangeText={setSearch}
         notificationLabel={isEmployer ? 'View applicants' : 'View application updates'}
         onNotificationPress={() =>
-          router.push(isEmployer ? '/(tabs)/applicants' : '/(tabs)/applications')
+          router.push(isEmployer ? '/(tabs)/applicants' : '/notifications')
         }
       />
 

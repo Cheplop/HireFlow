@@ -9,6 +9,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { useAuth } from "./AuthContext";
+import { useNotifications } from "./NotificationsContext";
 import { useJobs } from "./JobsContext";
 
 const ApplicationsContext = createContext(null);
@@ -17,6 +18,7 @@ const APPLICATIONS_STORAGE_KEY = "hireflow.applications";
 export function ApplicationsProvider({ children }) {
   const { user, isKnownUserId } = useAuth();
   const { getJobById, hasLoadedJobs } = useJobs();
+  const { addNotification } = useNotifications();
 
   // Applications are created only by a real local account. Bundled job data
   // is intentionally not accompanied by fake application records.
@@ -290,8 +292,16 @@ export function ApplicationsProvider({ children }) {
       }
       setSaveError("");
       setApplications(updatedApplications);
+
+      addNotification({
+        userId: application.employeeId,
+        title: `Application ${status.toLowerCase()}`,
+        message: `Your application for ${job.jobTitle} at ${job.jobCompany} was ${status.toLowerCase()}.`,
+        type: status === "Accepted" ? "success" : status === "Declined" ? "error" : "info",
+        relatedId: application.id,
+      });
     },
-    [applications, getApplicationById, getJobById, hasLoadedApplications, user],
+    [addNotification, applications, getApplicationById, getJobById, hasLoadedApplications, user],
   );
 
   // Allow employers to delete applications for their own jobs

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Alert, FlatList, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { FlatList, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -48,14 +48,8 @@ export default function ApplicationScreen() {
         placeholder="Search applications..."
         value={search}
         onChangeText={setSearch}
-        notificationLabel="View jobs"
-        onNotificationPress={() => {
-          if (router.canGoBack()) {
-            Alert.alert('Notifications', 'Notifications are not available yet.');
-          } else {
-            router.push('/');
-          }
-        }}
+        notificationLabel="View notifications"
+        onNotificationPress={() => router.push('/notifications')}
       />
 
       {/* Status Filters */}
