@@ -1,21 +1,9 @@
-import { useState } from "react";
-import {
-  Image,
-  Platform,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import theme from "../../styles/theme";
-import { AuthInput } from "../common/AuthInput";
-import { PrimaryButton } from "../common/PrimaryButton";
-import StatusCard from "../common/StatusCard";
-
-function getCoverLetterText(value) {
-  if (typeof value === "string") return value;
-  return value?.text || "";
-}
+import { useState } from 'react';
+import { View, Text, StyleSheet, Image, Platform, TouchableOpacity } from 'react-native';
+import theme from '../../styles/theme';
+import StatusCard from '../common/StatusCard';
+import { AuthInput } from '../common/AuthInput';
+import { PrimaryButton } from '../common/PrimaryButton';
 
 export default function ApplicationsCard({
   application,
@@ -25,34 +13,27 @@ export default function ApplicationsCard({
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [coverLetter, setCoverLetter] = useState(() =>
-    getCoverLetterText(application.coverLetter),
-  );
-  const [error, setError] = useState("");
-  const canEdit = application.status === "Pending";
+  const [coverLetter, setCoverLetter] = useState(application.coverLetter || '');
+  const [error, setError] = useState('');
+  const canEdit = application.status === 'Pending';
 
-  function saveChanges() {
-    const trimmedCoverLetter = coverLetter.trim();
+function saveChanges() {
+  const trimmedCoverLetter = coverLetter.trim();
 
-    if (trimmedCoverLetter.length < 50) {
-      setError("Cover letter must be at least 50 characters.");
-      return;
-    }
-
-    const updatedPayload =
-      application.coverLetter && typeof application.coverLetter === "object"
-        ? { ...application.coverLetter, text: trimmedCoverLetter }
-        : trimmedCoverLetter;
-
-    try {
-      onUpdate(application.id, updatedPayload);
-      setCoverLetter(trimmedCoverLetter);
-      setIsEditing(false);
-      setError("");
-    } catch (updateError) {
-      setError(updateError.message);
-    }
+  if (trimmedCoverLetter.length < 50) {
+    setError('Cover letter must be at least 50 characters.');
+    return;
   }
+
+  try {
+    onUpdate(application.id, trimmedCoverLetter);
+    setCoverLetter(trimmedCoverLetter);
+    setIsEditing(false);
+    setError('');
+  } catch (updateError) {
+    setError(updateError.message);
+  }
+}
 
   function withdraw() {
     try {
@@ -65,34 +46,26 @@ export default function ApplicationsCard({
   return (
     <View style={styles.card}>
       {/* Tapping the header toggles the expanded state */}
-      <TouchableOpacity
-        style={styles.header}
-        activeOpacity={0.7}
+      <TouchableOpacity 
+        style={styles.header} 
+        activeOpacity={0.7} 
         onPress={() => {
           setIsExpanded(!isExpanded);
           if (isEditing) {
-            setIsEditing(false);
+            setIsEditing(false); // Reset editing mode when collapsing
           }
         }}
       >
         <View style={styles.imageContainer}>
-          <Image
-            source={job.companyLogo}
-            style={styles.image}
-            resizeMode="contain"
-          />
+          <Image source={job.companyLogo} style={styles.image} resizeMode="contain" />
         </View>
         <View style={styles.cardContent}>
           <Text style={styles.statusLabel}>
-            Application status:{" "}
+            Application status:{' '}
             <Text style={styles.statusLabelText}>{application.status}</Text>
           </Text>
-          <Text style={styles.cardTitle} numberOfLines={1}>
-            {job.jobTitle}
-          </Text>
-          <Text style={styles.cardCompany} numberOfLines={1}>
-            {job.jobCompany}
-          </Text>
+          <Text style={styles.cardTitle} numberOfLines={1}>{job.jobTitle}</Text>
+          <Text style={styles.cardCompany} numberOfLines={1}>{job.jobCompany}</Text>
         </View>
         <View style={styles.statusContainer}>
           <StatusCard status={application.status} />
@@ -116,9 +89,7 @@ export default function ApplicationsCard({
           ) : coverLetter ? (
             <View style={styles.coverLetterContainer}>
               <Text style={styles.coverLetterLabel}>Cover letter:</Text>
-              <Text style={styles.coverLetterText} numberOfLines={3}>
-                {coverLetter}
-              </Text>
+              <Text style={styles.coverLetterText} numberOfLines={3}>{coverLetter}</Text>
             </View>
           ) : null}
 
@@ -128,20 +99,14 @@ export default function ApplicationsCard({
             <View style={styles.actions}>
               {isEditing ? (
                 <>
-                  <PrimaryButton
-                    title="Save"
-                    onPress={saveChanges}
-                    style={styles.actionButton}
-                  />
+                  <PrimaryButton title="Save" onPress={saveChanges} style={styles.actionButton} />
                   <PrimaryButton
                     title="Cancel"
                     variant="secondary"
                     onPress={() => {
-                      setCoverLetter(
-                        getCoverLetterText(application.coverLetter),
-                      );
+                      setCoverLetter(application.coverLetter || '');
                       setIsEditing(false);
-                      setError("");
+                      setError('');
                     }}
                     style={styles.actionButton}
                   />
@@ -172,15 +137,15 @@ export default function ApplicationsCard({
 
 const styles = StyleSheet.create({
   card: {
-    width: "100%",
+    width: '100%',
     padding: theme.spacing.medium,
     borderRadius: theme.radius.large,
-    flexDirection: "column",
+    flexDirection: 'column',
     gap: theme.spacing.medium,
     backgroundColor: theme.colors.cardBackground,
     ...Platform.select({
       ios: {
-        shadowColor: "#000",
+        shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.08,
         shadowRadius: 8,
@@ -194,8 +159,8 @@ const styles = StyleSheet.create({
     }),
   },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: theme.spacing.medium,
   },
   imageContainer: {
@@ -203,10 +168,10 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: theme.radius.small,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
     borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.04)",
+    borderColor: 'rgba(0,0,0,0.04)',
   },
   image: {
     width: 32,
@@ -214,7 +179,7 @@ const styles = StyleSheet.create({
   },
   cardContent: {
     flex: 1,
-    justifyContent: "center",
+    justifyContent: 'center',
   },
   statusLabel: {
     color: theme.fontColor.secondary,
@@ -228,7 +193,7 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: theme.fontSize.medium,
-    fontWeight: "bold",
+    fontWeight: 'bold',
     color: theme.fontColor.primary,
   },
   cardCompany: {
@@ -237,25 +202,25 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
   statusContainer: {
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   expandedSection: {
-    flexDirection: "column",
+    flexDirection: 'column',
     gap: theme.spacing.medium,
     borderTopWidth: 1,
-    borderTopColor: "rgba(0,0,0,0.04)",
+    borderTopColor: 'rgba(0,0,0,0.04)',
     paddingTop: theme.spacing.medium,
   },
   coverLetterContainer: {
-    backgroundColor: "rgba(0,0,0,0.02)",
+    backgroundColor: 'rgba(0,0,0,0.02)',
     padding: theme.spacing.small,
     borderRadius: theme.radius.small,
     gap: 2,
   },
   coverLetterLabel: {
     fontSize: 12,
-    fontWeight: "bold",
+    fontWeight: 'bold',
     color: theme.fontColor.primary,
   },
   coverLetterText: {
@@ -266,11 +231,11 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   errorText: {
-    color: "#B3261E",
+    color: '#B3261E',
     fontSize: theme.fontSize.small,
   },
   actions: {
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: theme.spacing.small,
   },
   actionButton: {
