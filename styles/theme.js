@@ -5,6 +5,10 @@ const theme = {
     background: "#FBFBFB",
     cardBackground: "#FFFFFF",
     text: "#333333",
+    title: "#111827",
+    subtitle: "#5f6c7b",
+    label: "#1d1f22",
+    error: "#B3261E",
     primary: "#7288AE",
     border: "#E5E7EB",
     coverBackground: "#DCE3EF",
@@ -42,6 +46,7 @@ const theme = {
     medium: 15,
     large: 18,
     regular: 15,
+    title: 30,
   },
 
   fontColor: {

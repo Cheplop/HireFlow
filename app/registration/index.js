@@ -7,6 +7,7 @@ import { AuthInput } from "@/components/common/AuthInput";
 import { PrimaryButton } from "@/components/common/PrimaryButton";
 import RoleSelector from "@/components/common/RoleSelector";
 import { useAuth } from "../../contexts/AuthContext";
+import theme from "../../styles/theme";
 
 export default function RegisterScreen() {
   const { register } = useAuth();
@@ -127,7 +128,7 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    backgroundColor: "#FBFBFB",
+    backgroundColor: theme.colors.background,
     justifyContent: "flex-start",
     alignItems: "stretch",
     paddingHorizontal: 22,
@@ -137,23 +138,23 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   title: {
-    color: "#111827",
-    fontSize: 30,
+    color: theme.colors.title,
+    fontSize: theme.fontSize.title,
     fontWeight: "400",
     letterSpacing: -1,
     marginBottom: 8,
   },
   subtitle: {
-    color: "#5f6c7b",
-    fontSize: 15,
+    color: theme.colors.subtitle,
+    fontSize: theme.fontSize.medium,
     lineHeight: 22,
   },
   card: {
-    backgroundColor: "#ffffff",
+    backgroundColor: theme.colors.cardBackground,
     padding: 22,
   },
   formError: {
-    color: "#B3261E",
+    color: theme.colors.error,
     fontSize: 12,
     textAlign: "center",
     marginBottom: 10,
