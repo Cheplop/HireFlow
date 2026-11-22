@@ -1,20 +1,18 @@
-
+import { AuthInput } from "@/components/common/AuthInput";
+import { PrimaryButton } from "@/components/common/PrimaryButton";
+import { Link } from "expo-router";
+import { Eye, EyeOff, KeyRound, User } from "lucide-react-native";
 import { useState } from "react";
 import {
   Image,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
-  Pressable,
 } from "react-native";
-import { Link } from "expo-router";
-import { User, KeyRound, Eye, EyeOff } from "lucide-react-native";
-
-import theme from "../styles/theme";
-import { AuthInput } from "@/components/common/AuthInput";
-import { PrimaryButton } from "@/components/common/PrimaryButton";
 import { useAuth } from "../contexts/AuthContext";
+import theme from "../styles/theme";
 
 export default function LoginScreen() {
   const { login } = useAuth();
@@ -27,7 +25,7 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email.trim() || !password) {
-      setError("Enter your username/email and password.");
+      setError("Please enter your username/email and password.");
       return;
     }
 
@@ -43,7 +41,7 @@ export default function LoginScreen() {
       }
 
       // PublicOnly handles redirection after successful login.
-    } catch (error) {
+    } catch {
       setError("Something went wrong. Please try again.");
     } finally {
       setIsSubmitting(false);
@@ -99,15 +97,12 @@ export default function LoginScreen() {
         <PrimaryButton
           title={isSubmitting ? "Logging in..." : "Log in"}
           onPress={handleLogin}
-          disabled={isSubmitting}
         />
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
         <View style={styles.registerRow}>
-          <Text style={styles.registerText}>
-            Don’t have an account? 
-          </Text>
+          <Text style={styles.registerText}>Don’t have an account? </Text>
 
           <Link href="/registration">
             <Text style={styles.registerLink}>register here</Text>

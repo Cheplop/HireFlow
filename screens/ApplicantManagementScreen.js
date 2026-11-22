@@ -1,26 +1,28 @@
-import { LogOut, Users } from "lucide-react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
+import { Menu, Search, Users } from "lucide-react-native";
 import { useEffect, useMemo, useState } from "react";
 import {
-  Alert,
   ActivityIndicator,
+  Alert,
   FlatList,
-  Pressable,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import ApplicantCard from "@/components/employer/ApplicantCard";
+import { AuthInput } from "@/components/common/AuthInput";
 import { PrimaryButton } from "@/components/common/PrimaryButton";
-import SearchRow from "@/components/common/SearchRow";
-import { useAuth } from "../contexts/AuthContext";
+import ApplicantCard from "@/components/employer/ApplicantCard";
+import ProfileMenu from "../components/profile/ProfileMenu";
 import { useApplicants } from "../contexts/ApplicantsContext";
+import { useAuth } from "../contexts/AuthContext";
 import { useJobs } from "../contexts/JobsContext";
+import { useNotifications } from "../contexts/NotificationsContext";
 import { PHOTO_STORAGE_KEY } from "../data/ProfileScreen.data";
 import theme from "../styles/theme";
 
@@ -60,10 +62,13 @@ export default function ApplicantManagementScreen() {
   const [selectedJobMode, setSelectedJobMode] = useState(jobModes[0]);
   const [profilePhotos, setProfilePhotos] = useState({});
   const [photoLoadError, setPhotoLoadError] = useState("");
+  const [isMenuVisible, setIsMenuVisible] = useState(false);
 
   const { user, logout } = useAuth();
   const router = useRouter();
   const { getJobsForEmployer } = useJobs();
+  const { getUnreadCount } = useNotifications();
+  const unreadCount = user ? getUnreadCount(user.id) : 0;
   const employerJobs = user?.id ? getJobsForEmployer(user.id) : [];
   const {
     getApplicantsByJob,
@@ -72,16 +77,12 @@ export default function ApplicantManagementScreen() {
     saveError,
   } = useApplicants();
 
-  const applications = useMemo(
-    () =>
-      employerJobs.flatMap((job) =>
-        getApplicantsByJob(job.id, user.id).map((applicant) => ({
-          ...applicant,
-          jobTitle: job.jobTitle,
-          jobMode: job.jobMode,
-        })),
-      ),
-    [employerJobs, getApplicantsByJob, user?.id],
+  const applications = employerJobs.flatMap((job) =>
+    getApplicantsByJob(job.id, user?.id).map((applicant) => ({
+      ...applicant,
+      jobTitle: job.jobTitle,
+      jobMode: job.jobMode,
+    })),
   );
 
   const filteredApplicants = useMemo(() => {
@@ -106,17 +107,21 @@ export default function ApplicantManagementScreen() {
   useEffect(() => {
     if (!hasLoadedApplications) return undefined;
     let active = true;
-    const employeeIds = [...new Set(
-      applications.map((applicant) => applicant.employeeId).filter(Boolean),
-    )];
-
-    if (!employeeIds.length) {
-      setProfilePhotos({});
-      setPhotoLoadError("");
-      return () => { active = false; };
-    }
+    const employeeIds = [
+      ...new Set(
+        applications.map((applicant) => applicant.employeeId).filter(Boolean),
+      ),
+    ];
 
     async function loadPhotos() {
+      if (!employeeIds.length) {
+        if (active) {
+          setProfilePhotos({});
+          setPhotoLoadError("");
+        }
+        return;
+      }
+
       try {
         const savedEntries = await AsyncStorage.multiGet(
           employeeIds.map((id) => `${PHOTO_STORAGE_KEY}:${id}`),
@@ -136,7 +141,9 @@ export default function ApplicantManagementScreen() {
         });
         setProfilePhotos(photos);
         setPhotoLoadError(
-          hasInvalidPhotoData ? "Some applicant profile photos could not be loaded." : "",
+          hasInvalidPhotoData
+            ? "Some applicant profile photos could not be loaded."
+            : "",
         );
       } catch (error) {
         if (active) {
@@ -150,7 +157,9 @@ export default function ApplicantManagementScreen() {
     }
 
     void loadPhotos();
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [applications, hasLoadedApplications]);
 
   const performLogout = async () => {
@@ -168,6 +177,8 @@ export default function ApplicantManagementScreen() {
   };
 
   const handleLogout = () => {
+    setIsMenuVisible(false);
+
     if (Platform.OS === "web") {
       if (
         typeof window !== "undefined" &&
@@ -192,48 +203,46 @@ export default function ApplicantManagementScreen() {
 
   return (
     <SafeAreaView style={styles.safeAreaView} edges={["top"]}>
-      <SearchRow
-        placeholder="Search keywords here..."
-        value={search}
-        onChangeText={setSearch}
-        notificationLabel="Notifications"
-        onNotificationPress={() =>
-          Alert.alert("Notifications", "Notifications are not available yet.")
-        }
-      />
-
-      {/* Job Type Filters & Logout */}
-      <View style={styles.toolbarRow}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.filterScroll}
-          contentContainerStyle={styles.filters}
-        >
-          {jobModes.map((mode) => (
-            <PrimaryButton
-              key={mode}
-              title={mode}
-              variant={selectedJobMode === mode ? "active" : "inactive"}
-              onPress={() => setSelectedJobMode(mode)}
-              style={styles.filterButton}
-            />
-          ))}
-        </ScrollView>
+      {/* Pill Search Input + Single Triple-Line Menu Button */}
+      <View style={styles.searchRow}>
+        <AuthInput
+          placeholder="Search keywords here..."
+          value={search}
+          onChangeText={setSearch}
+          autoCapitalize="none"
+          style={styles.searchInput}
+          inputStyle={styles.searchInputField}
+          rightIcon={<Search size={18} color={theme.fontColor.primary} />}
+        />
 
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Log out"
-          onPress={handleLogout}
-          style={({ pressed }) => [
-            styles.logoutButton,
-            pressed && styles.logoutButtonPressed,
-          ]}
+          accessibilityLabel="Open menu"
+          style={styles.menuButton}
+          onPress={() => setIsMenuVisible(true)}
         >
-          <LogOut size={14} color={theme.actions?.deletePrimary ?? "#B3261E"} />
-          <Text style={styles.logoutText}>Log out</Text>
+          <Menu size={18} color={theme.fontColor.primary} />
+          {unreadCount > 0 && <View style={styles.unreadDot} />}
         </Pressable>
       </View>
+
+      {/* Job Type Filters */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.filterScroll}
+        contentContainerStyle={styles.filters}
+      >
+        {jobModes.map((mode) => (
+          <PrimaryButton
+            key={mode}
+            title={mode}
+            variant={selectedJobMode === mode ? "active" : "inactive"}
+            onPress={() => setSelectedJobMode(mode)}
+            style={styles.filterButton}
+          />
+        ))}
+      </ScrollView>
 
       {/* Applicant List */}
       <FlatList
@@ -253,34 +262,50 @@ export default function ApplicantManagementScreen() {
         ListHeaderComponent={
           loadError || saveError || photoLoadError ? (
             <Text style={styles.errorText}>
-              {[loadError, saveError, photoLoadError].filter(Boolean).join("\n")}
+              {[loadError, saveError, photoLoadError]
+                .filter(Boolean)
+                .join("\n")}
             </Text>
           ) : null
         }
         ListEmptyComponent={
-          !hasLoadedApplications ? <View style={styles.emptyState}>
-            <ActivityIndicator color={theme.colors.primary} />
-            <Text style={styles.emptyText}>Loading applications…</Text>
-          </View> : <View style={styles.emptyState}>
-            <Users size={40} color={theme.fontColor.secondary} />
+          !hasLoadedApplications ? (
+            <View style={styles.emptyState}>
+              <ActivityIndicator color={theme.colors.primary} />
+              <Text style={styles.emptyText}>Loading applications…</Text>
+            </View>
+          ) : (
+            <View style={styles.emptyState}>
+              <Users size={40} color={theme.fontColor.secondary} />
 
-            <Text style={styles.emptyTitle}>
-              {employerJobs.length
-                ? applications.length
-                  ? "No applications found"
-                  : "No applications yet"
-                : "No jobs yet"}
-            </Text>
+              <Text style={styles.emptyTitle}>
+                {employerJobs.length
+                  ? applications.length
+                    ? "No applications found"
+                    : "No applications yet"
+                  : "No jobs yet"}
+              </Text>
 
-            <Text style={styles.emptyText}>
-              {employerJobs.length
-                ? applications.length
-                  ? "Try another job type or search term."
-                  : "Applicants will appear here when they apply to your listings."
-                : "Applicants will appear here when they apply to your listings."}
-            </Text>
-          </View>
+              <Text style={styles.emptyText}>
+                {employerJobs.length
+                  ? applications.length
+                    ? "Try another job type or search term."
+                    : "Applicants will appear here when they apply to your listings."
+                  : "Applicants will appear here when they apply to your listings."}
+              </Text>
+            </View>
+          )
         }
+      />
+
+      <ProfileMenu
+        visible={isMenuVisible}
+        onClose={() => setIsMenuVisible(false)}
+        onNotifications={() => {
+          setIsMenuVisible(false);
+          router.push("/notifications");
+        }}
+        onLogout={handleLogout}
       />
     </SafeAreaView>
   );
@@ -292,24 +317,64 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.background,
     paddingHorizontal: 20,
   },
-
-  toolbarRow: {
+  searchRow: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 10,
+    marginTop: 12,
+    marginBottom: theme.spacing.medium,
+  },
+  searchInput: {
+    flex: 1,
+    marginBottom: 0,
+  },
+  searchInputField: {
+    height: 44,
+    paddingVertical: 0,
+    paddingRight: 42,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: 22,
+    backgroundColor: theme.colors.cardBackground,
+    fontSize: theme.fontSize.xsmall,
+    shadowColor: theme.colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  menuButton: {
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    borderRadius: 22,
+    backgroundColor: theme.colors.cardBackground,
+    shadowColor: theme.colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  unreadDot: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#B3261E",
+  },
+  filterScroll: {
+    flexGrow: 0,
+    flexShrink: 0,
+  },
+  filters: {
     gap: 8,
     paddingBottom: theme.spacing.medium,
   },
-
-  filterScroll: {
-    flex: 1,
-    flexGrow: 1,
-    flexShrink: 1,
-  },
-
-  filters: {
-    gap: 8,
-  },
-
   filterButton: {
     width: "auto",
     minWidth: 84,
@@ -319,33 +384,9 @@ const styles = StyleSheet.create({
     borderRadius: 17,
     borderColor: theme.colors.border,
   },
-
-  logoutButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 5,
-    height: 34,
-    paddingHorizontal: 12,
-    borderRadius: 17,
-    backgroundColor: theme.actions?.deleteBg ?? "#FDECEC",
-    flexShrink: 0,
-  },
-
-  logoutButtonPressed: {
-    opacity: 0.85,
-  },
-
-  logoutText: {
-    color: theme.actions?.deletePrimary ?? "#B3261E",
-    fontSize: theme.fontSize.xsmall,
-    fontWeight: theme.fontWeight?.semibold ?? "600",
-  },
-
   applicantList: {
     flex: 1,
   },
-
   cards: {
     gap: 12,
     paddingBottom: 110,
@@ -353,21 +394,18 @@ const styles = StyleSheet.create({
     paddingTop: 2,
     flexGrow: 1,
   },
-
   emptyState: {
     alignItems: "center",
     gap: theme.spacing.small,
     paddingHorizontal: theme.spacing.large,
     paddingTop: 72,
   },
-
   emptyTitle: {
     color: theme.fontColor.primary,
     fontWeight: "700",
     fontSize: theme.fontSize.large,
     textAlign: "center",
   },
-
   emptyText: {
     color: theme.fontColor.secondary,
     fontSize: theme.fontSize.small,
@@ -375,7 +413,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   errorText: {
-    color: theme.actions?.deletePrimary ?? "#B3261E",
+    color: theme.actions.deletePrimary,
     fontSize: theme.fontSize.small,
     paddingVertical: theme.spacing.small,
   },
