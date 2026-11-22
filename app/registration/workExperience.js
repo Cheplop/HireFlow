@@ -12,6 +12,8 @@ import { router } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
 
 import { PrimaryButton } from "@/components/common/PrimaryButton";
+import { useAuth } from "../../contexts/AuthContext";
+import { saveProfileData } from "../../data/profileStorage";
 
 // The inputs are described once here, then drawn with .map() below.
 const FIELDS = [
@@ -20,6 +22,7 @@ const FIELDS = [
 ];
 
 export default function WorkExperienceScreen() {
+  const { user } = useAuth();
   const [values, setValues] = useState({ company: "", position: "" });
 
   // Update a single field without touching the others.
@@ -65,7 +68,20 @@ export default function WorkExperienceScreen() {
           <PrimaryButton
             title="NEXT"
             style={styles.nextButton}
-            onPress={() => router.dismissAll("/")}
+            onPress={async () => {
+              const experience = values.company.trim() || values.position.trim()
+                ? [{
+                    id: `exp-${Date.now()}`,
+                    title: values.position.trim(),
+                    subtitle: values.company.trim(),
+                    date: "",
+                    details: [],
+                    description: "",
+                  }]
+                : [];
+              await saveProfileData(user?.id, { experience });
+              router.replace("/(tabs)");
+            }}
           />
         </View>
       </ScrollView>

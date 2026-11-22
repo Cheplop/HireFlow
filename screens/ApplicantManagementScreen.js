@@ -28,6 +28,35 @@ import theme from "../styles/theme";
 
 const jobModes = ["All", "Full-time", "Part-time", "Contractual"];
 
+function getSearchableNames(applicant) {
+  const first = applicant?.firstName?.trim();
+  const last = applicant?.lastName?.trim();
+  const fullName = applicant?.name?.trim();
+  const candidates = new Set();
+
+  if (fullName) {
+    candidates.add(fullName);
+  }
+  if (first || last) {
+    candidates.add([first, last].filter(Boolean).join(" "));
+    if (last && first) {
+      candidates.add(`${last}, ${first}`);
+      candidates.add(`${last} ${first}`);
+    }
+  }
+  if (fullName) {
+    const parts = fullName.split(/\s+/);
+    if (parts.length > 1) {
+      const lastName = parts.pop();
+      const firstName = parts.join(" ");
+      candidates.add(`${lastName}, ${firstName}`);
+      candidates.add(`${lastName} ${firstName}`);
+    }
+  }
+
+  return [...candidates];
+}
+
 export default function ApplicantManagementScreen() {
   const [search, setSearch] = useState("");
   const [selectedJobMode, setSelectedJobMode] = useState(jobModes[0]);
@@ -63,8 +92,8 @@ export default function ApplicantManagementScreen() {
       const matchesMode =
         selectedJobMode === "All" || applicant.jobMode === selectedJobMode;
 
-      const matchesSearch = [
-        applicant.name,
+      const matchesSearch = !query || [
+        ...getSearchableNames(applicant),
         applicant.jobTitle,
         applicant.education,
       ].some((value) =>

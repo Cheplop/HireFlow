@@ -28,8 +28,6 @@ export default function ProfileContent(props) {
     ) : null;
 
   const renderEducation = () => {
-    if (educationEmpty) return <Text style={styles.emptyText}>No education added yet.</Text>;
-
     const groups = [
       ...GROUP_ORDER,
       ...new Set(filteredEducation.map((e) => e.group).filter((g) => !GROUP_ORDER.includes(g))),
@@ -38,6 +36,7 @@ export default function ProfileContent(props) {
     return (
       <>
         <AddButton type="education" label="Add education" />
+        {educationEmpty && <Text style={styles.emptyText}>No education added yet.</Text>}
         {groups.map((group) => {
           const items = filteredEducation.filter((e) => e.group === group);
           if (!items.length) return null;
