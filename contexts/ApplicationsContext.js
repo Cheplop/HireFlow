@@ -1,4 +1,4 @@
-
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   createContext,
   useCallback,
@@ -6,10 +6,10 @@ import {
   useEffect,
   useState,
 } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { useAuth } from "./AuthContext";
 import { useJobs } from "./JobsContext";
+import { useNotifications } from "./NotificationsContext";
 
 const ApplicationsContext = createContext(null);
 const APPLICATIONS_STORAGE_KEY = "hireflow.applications";
@@ -17,9 +17,8 @@ const APPLICATIONS_STORAGE_KEY = "hireflow.applications";
 export function ApplicationsProvider({ children }) {
   const { user, isKnownUserId } = useAuth();
   const { getJobById, hasLoadedJobs } = useJobs();
+  const { addNotification } = useNotifications();
 
-  // Applications are created only by a real local account. Bundled job data
-  // is intentionally not accompanied by fake application records.
   const initialApplications = [];
 
   const [applications, setApplications] = useState(initialApplications);
@@ -29,7 +28,10 @@ export function ApplicationsProvider({ children }) {
 
   useEffect(() => {
     let cancelled = false;
-    if (!hasLoadedJobs) return () => { cancelled = true; };
+    if (!hasLoadedJobs)
+      return () => {
+        cancelled = true;
+      };
     AsyncStorage.getItem(APPLICATIONS_STORAGE_KEY)
       .then(async (stored) => {
         if (!stored || cancelled) return;
@@ -47,12 +49,17 @@ export function ApplicationsProvider({ children }) {
         }
       })
       .catch(() => {
-        if (!cancelled) setLoadError("Saved applications could not be loaded. Showing this session's data.");
+        if (!cancelled)
+          setLoadError(
+            "Saved applications could not be loaded. Showing this session's data.",
+          );
       })
       .finally(() => {
         if (!cancelled) setHasLoadedApplications(true);
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [getJobById, hasLoadedJobs, isKnownUserId]);
 
   useEffect(() => {
@@ -84,10 +91,7 @@ export function ApplicationsProvider({ children }) {
       const trimmedCoverLetter =
         typeof coverLetter === "string" ? coverLetter.trim() : "";
 
-      if (
-        trimmedCoverLetter.length < 50 ||
-        trimmedCoverLetter.length > 1000
-      ) {
+      if (trimmedCoverLetter.length < 50 || trimmedCoverLetter.length > 1000) {
         throw new Error(
           "Your cover letter must contain between 50 and 1000 characters.",
         );
@@ -96,8 +100,7 @@ export function ApplicationsProvider({ children }) {
       if (
         applications.some(
           (application) =>
-            application.jobId === job.id &&
-            application.employeeId === user.id,
+            application.jobId === job.id && application.employeeId === user.id,
         )
       ) {
         throw new Error("You have already applied for this job.");
@@ -126,9 +129,21 @@ export function ApplicationsProvider({ children }) {
 
       setApplications((current) => [...current, application]);
 
+      // Notify the employer about the new application
+      if (job.employerId) {
+        addNotification({
+          userId: job.employerId,
+          senderId: user.id,
+          title: "New Application Received",
+          message: `${user.username} applied for ${job.jobTitle}.`,
+          type: "application",
+          relatedId: application.id,
+        });
+      }
+
       return application;
     },
-    [applications, getJobById, hasLoadedApplications],
+    [addNotification, applications, getJobById, hasLoadedApplications],
   );
 
   // Get one employee's application for a specific job
@@ -146,8 +161,7 @@ export function ApplicationsProvider({ children }) {
   const getApplicationById = useCallback(
     (applicationId) =>
       applications.find(
-        (application) =>
-          String(application.id) === String(applicationId),
+        (application) => String(application.id) === String(applicationId),
       ),
     [applications],
   );
@@ -164,9 +178,7 @@ export function ApplicationsProvider({ children }) {
   // Get all applications submitted to a job
   const getApplicationsForJob = useCallback(
     (jobId) =>
-      applications.filter(
-        (application) => application.jobId === Number(jobId),
-      ),
+      applications.filter((application) => application.jobId === Number(jobId)),
     [applications],
   );
 
@@ -188,10 +200,7 @@ export function ApplicationsProvider({ children }) {
           ? changes.coverLetter.trim()
           : "";
 
-      if (
-        trimmedCoverLetter.length < 50 ||
-        trimmedCoverLetter.length > 1000
-      ) {
+      if (trimmedCoverLetter.length < 50 || trimmedCoverLetter.length > 1000) {
         throw new Error(
           "Your cover letter must contain between 50 and 1000 characters.",
         );
@@ -218,9 +227,7 @@ export function ApplicationsProvider({ children }) {
         application.employeeId !== employeeId ||
         application.status !== "Pending"
       ) {
-        throw new Error(
-          "Only your pending applications can be withdrawn.",
-        );
+        throw new Error("Only your pending applications can be withdrawn.");
       }
 
       setApplications((current) =>
@@ -240,12 +247,7 @@ export function ApplicationsProvider({ children }) {
       const application = getApplicationById(applicationId);
       const job = application && getJobById(application.jobId);
 
-      const allowedStatuses = [
-        "Pending",
-        "Accepted",
-        "Declined",
-        "Completed",
-      ];
+      const allowedStatuses = ["Pending", "Accepted", "Declined", "Completed"];
 
       if (
         user?.role !== "employer" ||
@@ -254,9 +256,7 @@ export function ApplicationsProvider({ children }) {
         !job ||
         job.employerId !== user.id
       ) {
-        throw new Error(
-          "You can only manage applicants for your own jobs.",
-        );
+        throw new Error("You can only manage applicants for your own jobs.");
       }
 
       if (!allowedStatuses.includes(status)) {
@@ -266,7 +266,7 @@ export function ApplicationsProvider({ children }) {
       const allowedTransitions = {
         Pending: ["Accepted", "Declined"],
         Accepted: ["Completed"],
-        Declined: [],
+        Declined: ["Completed"],
         Completed: [],
       };
       if (!allowedTransitions[application.status]?.includes(status)) {
@@ -290,8 +290,25 @@ export function ApplicationsProvider({ children }) {
       }
       setSaveError("");
       setApplications(updatedApplications);
+
+      // Notify the employee about the status update
+      addNotification({
+        userId: application.employeeId,
+        senderId: user.id,
+        title: `Application ${status}`,
+        message: `Your application for ${job.jobTitle} at ${job.jobCompany} was marked as ${status}.`,
+        type: "status",
+        relatedId: application.id,
+      });
     },
-    [applications, getApplicationById, getJobById, hasLoadedApplications, user],
+    [
+      addNotification,
+      applications,
+      getApplicationById,
+      getJobById,
+      hasLoadedApplications,
+      user,
+    ],
   );
 
   // Allow employers to delete applications for their own jobs
@@ -300,15 +317,11 @@ export function ApplicationsProvider({ children }) {
       const job = getJobById(jobId);
 
       if (!job || job.employerId !== employerId) {
-        throw new Error(
-          "You can only delete applicants for your own jobs.",
-        );
+        throw new Error("You can only delete applicants for your own jobs.");
       }
 
       setApplications((current) =>
-        current.filter(
-          (application) => application.jobId !== job.id,
-        ),
+        current.filter((application) => application.jobId !== job.id),
       );
     },
     [getJobById],
