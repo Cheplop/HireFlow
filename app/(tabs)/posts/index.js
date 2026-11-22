@@ -90,7 +90,7 @@ function Dropdown({ label, value, options, onChange, placeholder, style }) {
 export default function Posts() {
     const { user } = useAuth();
     const { createJob, updateJob, deleteJob, getJobsForEmployer } = useJobs();
-    const { deleteApplicationsForJob } = useApplications();
+    const { deleteApplicationsForJob, getApplicationsForJob } = useApplications();
     const router = useRouter();
     const employerJobs = getJobsForEmployer(user.id);
 
@@ -106,6 +106,7 @@ export default function Posts() {
     const [employmentType, setEmploymentType] = useState(employmentTypes[0]);
     const [workMode, setWorkMode] = useState(workModes[0]);
     const [editingJob, setEditingJob] = useState(null);
+    const [selectedJobId, setSelectedJobId] = useState(null);
     const [error, setError] = useState('');
 
     const filteredJobs = useMemo(() => {
@@ -222,32 +223,51 @@ export default function Posts() {
     }
 
     function renderJob({ item }) {
+        const isSelected = selectedJobId === item.id;
+        const hasAcceptedApplication = getApplicationsForJob(item.id).some(
+            (application) => ['Accepted', 'Completed'].includes(application.status),
+        );
+        const isJobClosed = !item.isPublished || hasAcceptedApplication;
+
         return (
-            <View style={styles.postCard}>
-                <View style={styles.postActions}>
-                    <Pressable
-                        style={styles.postAction}
-                        onPress={() => startEditing(item)}
-                        hitSlop={8}
-                    >
-                        <Pencil size={14} color={theme.fontColor.primary} />
-                        <Text style={styles.postActionText}>edit</Text>
-                    </Pressable>
-                    <Pressable
-                        style={styles.postAction}
-                        onPress={() => handleDelete(item)}
-                        hitSlop={8}
-                    >
-                        <Trash2 size={14} color={theme.fontColor.primary} />
-                        <Text style={styles.postActionText}>delete</Text>
-                    </Pressable>
-                </View>
+            <Pressable
+                style={styles.postCard}
+                onPress={() => setSelectedJobId(isSelected ? null : item.id)}
+            >
+                {isSelected ? (
+                    <View style={styles.postActions}>
+                        <Pressable
+                            style={styles.postAction}
+                            onPress={() => startEditing(item)}
+                            hitSlop={8}
+                        >
+                            <Pencil size={14} color={theme.fontColor.primary} />
+                            <Text style={styles.postActionText}>edit</Text>
+                        </Pressable>
+                        <Pressable
+                            style={styles.postAction}
+                            onPress={() => handleDelete(item)}
+                            hitSlop={8}
+                        >
+                            <Trash2 size={14} color={theme.fontColor.primary} />
+                            <Text style={styles.postActionText}>delete</Text>
+                        </Pressable>
+                    </View>
+                ) : null}
 
                 <View style={styles.logoBox}>
                     <Image source={resolveImageSource(item.companyLogo)} style={styles.postImage} />
                 </View>
 
                 <View style={styles.postInfo}>
+                    <Text
+                        style={[
+                            styles.postStatus,
+                            isJobClosed ? styles.closedStatus : styles.openStatus,
+                        ]}
+                    >
+                        {isJobClosed ? 'Closed' : 'Open'}
+                    </Text>
                     <Text style={styles.postTitle} numberOfLines={1}>
                         {item.jobTitle}
                     </Text>
@@ -255,7 +275,7 @@ export default function Posts() {
                         {item.jobCompany}
                     </Text>
                 </View>
-            </View>
+            </Pressable>
         );
     }
 
@@ -441,9 +461,14 @@ export default function Posts() {
                         ) : (
                             <View>
                                 <View style={styles.listHeading}>
-                                    <View style={styles.listHeadingText} />
+                                    <View style={styles.listHeadingText}>
+                                        <Text style={styles.sectionTitle}>Manage Jobs</Text>
+                                        <Text style={styles.sectionSubtitle}>
+                                            Manage your job listings here
+                                        </Text>
+                                    </View>
                                     <Text style={styles.jobCount}>
-                                        {filteredJobs.length} {filteredJobs.length === 1 ? 'Job' : 'Jobs'}
+                                        {employerJobs.length} {employerJobs.length === 1 ? 'Job' : 'Jobs'}
                                     </Text>
                                 </View>
                                 {error ? (
@@ -510,10 +535,17 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'flex-start',
         gap: theme.spacing.small,
+        marginBottom: theme.spacing.medium,
     },
 
     listHeadingText: {
         flex: 1,
+    },
+
+    sectionSubtitle: {
+        color: theme.fontColor.secondary,
+        fontSize: theme.fontSize.xsmall,
+        marginTop: 2,
     },
 
     jobCount: {
@@ -792,7 +824,20 @@ const styles = StyleSheet.create({
         flex: 1,
         minWidth: 0,
         gap: 2,
-        marginTop: 14,
+        marginTop: 0,
+    },
+
+    postStatus: {
+        fontSize: theme.fontSize.xsmall,
+        fontWeight: theme.fontWeight.semibold,
+    },
+
+    openStatus: {
+        color: '#34733B',
+    },
+
+    closedStatus: {
+        color: theme.actions.deletePrimary,
     },
 
     postTitle: {
