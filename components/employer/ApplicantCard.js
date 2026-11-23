@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
-import { ChevronRight, GraduationCap } from "lucide-react-native";
-import { Image, Platform, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { GraduationCap, Trash2 } from "lucide-react-native";
+import { Alert, Image, Platform, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useEffect, useState } from "react";
 import theme from "../../styles/theme";
 import StatusCard from "../common/StatusCard";
@@ -32,7 +32,7 @@ function formatLastFirstName(applicant) {
   return `${firstName} ${lastName}`;
 }
 
-export default function ApplicantCard({ applicant, jobId, status, avatarSource }) {
+export default function ApplicantCard({ applicant, jobId, status, avatarSource, onDelete }) {
   const router = useRouter();
   const [displayName, setDisplayName] = useState(formatLastFirstName(applicant));
   const [highestEducation, setHighestEducation] = useState(
@@ -66,6 +66,21 @@ export default function ApplicantCard({ applicant, jobId, status, avatarSource }
     return () => { active = false; };
   }, [applicant.employeeId, applicant.education]);
 
+  function confirmDelete(event) {
+    event?.stopPropagation?.();
+    const message = `Remove ${displayName} from your applicants? This can't be undone.`;
+
+    if (Platform.OS === "web") {
+      if (typeof window !== "undefined" && window.confirm(message)) onDelete?.();
+      return;
+    }
+
+    Alert.alert("Delete applicant", message, [
+      { text: "Cancel", style: "cancel" },
+      { text: "Delete", style: "destructive", onPress: () => onDelete?.() },
+    ]);
+  }
+
   return (
     <TouchableOpacity
       accessibilityRole="button"
@@ -98,11 +113,15 @@ export default function ApplicantCard({ applicant, jobId, status, avatarSource }
       </View>
 
       <View style={styles.rightSection}>
-        <ChevronRight
-          size={16}
-          color={theme.fontColor.secondary}
-          style={styles.chevron}
-        />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Delete ${displayName}`}
+          onPress={confirmDelete}
+          hitSlop={10}
+          style={styles.deleteAction}
+        >
+          <Trash2 size={14} color={theme.fontColor.primary} />
+        </Pressable>
         <StatusCard status={status} />
       </View>
     </TouchableOpacity>
@@ -171,7 +190,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   cardTitle: {
-    fontSize: theme.fontSize.medium,
+    fontSize: 15,
     fontWeight: theme.fontWeight.semibold,
     color: theme.fontColor.secondary,
   },
@@ -192,7 +211,9 @@ const styles = StyleSheet.create({
     gap: 12,
     alignSelf: "stretch",
   },
-  chevron: {
+  deleteAction: {
+    alignItems: "center",
+    justifyContent: "center",
     flexShrink: 0,
   },
 });

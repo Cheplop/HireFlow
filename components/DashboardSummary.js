@@ -23,20 +23,35 @@ export default function DashboardSummary() {
     const myJobIds = new Set(myJobs.map((job) => job.id));
     const received = applications.filter((item) => myJobIds.has(item.jobId));
 
+    // Same rule the Jobs tab uses for "Closed": unpublished, or already filled.
+    const filledJobIds = new Set(
+      received
+        .filter((item) => ["Accepted", "Completed"].includes(item.status))
+        .map((item) => item.jobId),
+    );
+    const activePosts = myJobs.filter(
+      (job) => job.isPublished && !filledJobIds.has(job.id),
+    );
+    const pending = received.filter((item) => item.status === "Pending");
+    // Still in the pipeline: waiting for a decision, or accepted but not completed yet.
+    const inProgress = received.filter((item) =>
+      ["Pending", "Accepted"].includes(item.status),
+    );
+
     tiles = [
       {
         label: "Active posts",
-        value: myJobs.length,
+        value: activePosts.length,
         onPress: () => router.push("/(tabs)/posts"),
       },
       {
         label: "Applicants",
-        value: received.length,
+        value: inProgress.length,
         onPress: () => router.push("/(tabs)/applicants"),
       },
       {
         label: "Pending",
-        value: received.filter((item) => item.status === "Pending").length,
+        value: pending.length,
         onPress: () => router.push("/(tabs)/applicants"),
       },
     ];
@@ -55,12 +70,13 @@ export default function DashboardSummary() {
       },
       {
         label: "Accepted",
-        value: mine.filter((item) => item.status === "Accepted").length,
+        value: mine.filter((item) =>
+          ["Accepted", "Completed"].includes(item.status),
+        ).length,
         onPress: () => router.push("/(tabs)/applications"),
       },
     ];
   }
-
   return (
     <View style={styles.container}>
       <View style={styles.tiles}>
