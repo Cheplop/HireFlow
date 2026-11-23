@@ -22,12 +22,13 @@ import ProfileMenu from "../components/profile/ProfileMenu";
 import { useAuth } from "../contexts/AuthContext";
 import { useApplicants } from "../contexts/ApplicantsContext";
 import { useJobs } from "../contexts/JobsContext";
+import { loadSavedProfile } from "../data/profileStorage";
 import { PHOTO_STORAGE_KEY } from "../data/ProfileScreen.data";
 import theme from "../styles/theme";
 
 const jobModes = ["All", "Full-time", "Part-time", "Contractual"];
 
-function getSearchableNames(applicant) {
+function getSearchableNames(applicant, savedName) {
   const first = applicant?.firstName?.trim();
   const last = applicant?.lastName?.trim();
   const fullName = applicant?.name?.trim();
@@ -35,6 +36,10 @@ function getSearchableNames(applicant) {
 
   if (fullName) {
     candidates.add(fullName);
+  }
+
+  if (savedName?.trim()) {
+    candidates.add(savedName.trim());
   }
   if (first || last) {
     candidates.add([first, last].filter(Boolean).join(" "));
@@ -60,13 +65,17 @@ export default function ApplicantManagementScreen() {
   const [search, setSearch] = useState("");
   const [selectedJobMode, setSelectedJobMode] = useState(jobModes[0]);
   const [profilePhotos, setProfilePhotos] = useState({});
+  const [profileNames, setProfileNames] = useState({});
   const [photoLoadError, setPhotoLoadError] = useState("");
   const [isMenuVisible, setIsMenuVisible] = useState(false);
 
   const { user, logout } = useAuth();
   const router = useRouter();
   const { getJobsForEmployer } = useJobs();
-  const employerJobs = user?.id ? getJobsForEmployer(user.id) : [];
+  const employerJobs = useMemo(
+    () => (user?.id ? getJobsForEmployer(user.id) : []),
+    [getJobsForEmployer, user?.id],
+  );
   const {
     getApplicantsByJob,
     hasLoadedApplications,
@@ -94,7 +103,7 @@ export default function ApplicantManagementScreen() {
         selectedJobMode === "All" || applicant.jobMode === selectedJobMode;
 
       const matchesSearch = !query || [
-        ...getSearchableNames(applicant),
+        ...getSearchableNames(applicant, profileNames[applicant.employeeId]),
         applicant.jobTitle,
         applicant.education,
       ].some((value) =>
@@ -103,7 +112,7 @@ export default function ApplicantManagementScreen() {
 
       return matchesMode && matchesSearch;
     });
-  }, [applications, search, selectedJobMode]);
+  }, [applications, profileNames, search, selectedJobMode]);
 
   useEffect(() => {
     if (!hasLoadedApplications) return undefined;
@@ -113,8 +122,8 @@ export default function ApplicantManagementScreen() {
     )];
 
     if (!employeeIds.length) {
-      setProfilePhotos({});
-      setPhotoLoadError("");
+      setProfilePhotos((current) => (Object.keys(current).length ? {} : current));
+      setPhotoLoadError((current) => (current ? "" : current));
       return () => { active = false; };
     }
 
@@ -152,6 +161,43 @@ export default function ApplicantManagementScreen() {
     }
 
     void loadPhotos();
+    return () => { active = false; };
+  }, [applications, hasLoadedApplications]);
+
+  useEffect(() => {
+    if (!hasLoadedApplications) return undefined;
+
+    let active = true;
+    const employeeIds = [...new Set(
+      applications.map((applicant) => applicant.employeeId).filter(Boolean),
+    )];
+
+    async function loadProfileNames() {
+      const entries = await Promise.all(
+        employeeIds.map(async (employeeId) => {
+          const savedProfile = await loadSavedProfile(employeeId);
+          const firstName =
+            savedProfile?.firstName?.trim() ||
+            savedProfile?.profile?.firstName?.trim();
+          const lastName =
+            savedProfile?.lastName?.trim() ||
+            savedProfile?.profile?.lastName?.trim();
+          const profileName = savedProfile?.profile?.name?.trim();
+          const name = [firstName, lastName].filter(Boolean).join(" ") || profileName;
+
+          return name ? [employeeId, name] : null;
+        }),
+      );
+
+      if (active) {
+        const nextNames = Object.fromEntries(entries.filter(Boolean));
+        setProfileNames((current) =>
+          JSON.stringify(current) === JSON.stringify(nextNames) ? current : nextNames,
+        );
+      }
+    }
+
+    void loadProfileNames();
     return () => { active = false; };
   }, [applications, hasLoadedApplications]);
 
@@ -196,7 +242,7 @@ export default function ApplicantManagementScreen() {
     <SafeAreaView style={styles.safeAreaView} edges={["top"]}>
       <View style={styles.searchRow}>
         <AuthInput
-          placeholder="Search keywords here..."
+          placeholder="Search names or keywords..."
           value={search}
           onChangeText={setSearch}
           autoCapitalize="none"

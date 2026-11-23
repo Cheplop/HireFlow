@@ -1,30 +1,35 @@
-import { useMemo, useState } from 'react';
-import { Alert, FlatList, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { router } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from "expo-router";
+import { useMemo, useState } from "react";
+import { FlatList, ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import ApplicationsCard from '@/components/employee/ApplicationsCard';
-import { PrimaryButton } from '@/components/common/PrimaryButton';
-import SearchRow from '@/components/common/SearchRow';
-import { useAuth } from '../contexts/AuthContext';
-import { useApplications } from '../contexts/ApplicationsContext';
-import { useJobs } from '../contexts/JobsContext';
-import theme from '../styles/theme';
+import { PrimaryButton } from "@/components/common/PrimaryButton";
+import SearchRow from "@/components/common/SearchRow";
+import ApplicationsCard from "@/components/employee/ApplicationsCard";
+import { useApplications } from "../contexts/ApplicationsContext";
+import { useAuth } from "../contexts/AuthContext";
+import { useJobs } from "../contexts/JobsContext";
+import { useNotifications } from "../contexts/NotificationsContext";
+import theme from "../styles/theme";
 
-const statusFilters = ['All', 'Pending', 'Accepted', 'Declined', 'Completed'];
+const statusFilters = ["All", "Pending", "Accepted", "Declined", "Completed"];
 
 export default function ApplicationScreen() {
-  const [search, setSearch] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('All');
+  const [search, setSearch] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("All");
   const { user } = useAuth();
   const { jobs } = useJobs();
+  const { getUnreadCount } = useNotifications();
   const {
     getApplicationsForEmployee,
     updateEmployeeApplication,
     withdrawApplication,
     saveError,
   } = useApplications();
-  const employeeApplications = user?.id ? getApplicationsForEmployee(user.id) : [];
+  const employeeApplications = user?.id
+    ? getApplicationsForEmployee(user.id)
+    : [];
+  const unreadCount = user?.id ? getUnreadCount(user.id) : 0;
 
   const filteredApplications = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -36,26 +41,24 @@ export default function ApplicationScreen() {
       }))
       .filter(({ job, status }) => {
         if (!job) return false;
-        const matchesStatus = selectedStatus === 'All' || status === selectedStatus;
-        const matchesSearch = `${job.jobTitle} ${job.jobCompany}`.toLowerCase().includes(query);
+        const matchesStatus =
+          selectedStatus === "All" || status === selectedStatus;
+        const matchesSearch = `${job.jobTitle} ${job.jobCompany}`
+          .toLowerCase()
+          .includes(query);
         return matchesStatus && matchesSearch;
       });
   }, [employeeApplications, jobs, search, selectedStatus]);
 
   return (
-    <SafeAreaView style={styles.safeAreaView} edges={['top']}>
+    <SafeAreaView style={styles.safeAreaView} edges={["top"]}>
       <SearchRow
         placeholder="Search applications..."
         value={search}
         onChangeText={setSearch}
-        notificationLabel="View jobs"
-        onNotificationPress={() => {
-          if (router.canGoBack()) {
-            Alert.alert('Notifications', 'Notifications are not available yet.');
-          } else {
-            router.push('/');
-          }
-        }}
+        notificationLabel="View notifications"
+        unreadCount={unreadCount}
+        onNotificationPress={() => router.push("/notifications")}
       />
 
       {/* Status Filters */}
@@ -69,7 +72,7 @@ export default function ApplicationScreen() {
           <PrimaryButton
             key={status}
             title={status}
-            variant={selectedStatus === status ? 'active' : 'inactive'}
+            variant={selectedStatus === status ? "active" : "inactive"}
             onPress={() => setSelectedStatus(status)}
             style={styles.filterButton}
           />
@@ -82,7 +85,9 @@ export default function ApplicationScreen() {
         style={styles.applicationList}
         contentContainerStyle={styles.cards}
         showsVerticalScrollIndicator={false}
-        ListHeaderComponent={saveError ? <Text style={styles.errorText}>{saveError}</Text> : null}
+        ListHeaderComponent={
+          saveError ? <Text style={styles.errorText}>{saveError}</Text> : null
+        }
         renderItem={({ item }) => (
           <ApplicationsCard
             application={item}
@@ -99,12 +104,14 @@ export default function ApplicationScreen() {
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={styles.emptyTitle}>
-              {employeeApplications.length === 0 ? 'No applications yet' : 'No matching applications'}
+              {employeeApplications.length === 0
+                ? "No applications yet"
+                : "No matching applications"}
             </Text>
             <Text style={styles.emptyText}>
               {employeeApplications.length === 0
-                ? 'Explore available jobs and submit an application to see it here.'
-                : 'Try a different search or status filter.'}
+                ? "Explore available jobs and submit an application to see it here."
+                : "Try a different search or status filter."}
             </Text>
           </View>
         }
@@ -131,7 +138,7 @@ const styles = StyleSheet.create({
   },
 
   filterButton: {
-    width: 'auto',
+    width: "auto",
     minWidth: 84,
     height: 34,
     paddingHorizontal: 14,
@@ -153,16 +160,16 @@ const styles = StyleSheet.create({
   },
 
   emptyState: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingHorizontal: theme.spacing.large,
     paddingTop: 64,
   },
 
   emptyTitle: {
     color: theme.fontColor.primary,
-    fontWeight: '700',
+    fontWeight: "700",
     fontSize: theme.fontSize.large,
-    textAlign: 'center',
+    textAlign: "center",
   },
 
   emptyText: {
@@ -170,7 +177,7 @@ const styles = StyleSheet.create({
     fontSize: theme.fontSize.small,
     lineHeight: 19,
     marginTop: theme.spacing.small,
-    textAlign: 'center',
+    textAlign: "center",
   },
 
   errorText: {
