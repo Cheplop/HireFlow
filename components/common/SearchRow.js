@@ -1,8 +1,8 @@
 import { Bell, Search } from "lucide-react-native";
 import { Pressable, StyleSheet, View } from "react-native";
 
-import { AuthInput } from "./AuthInput";
 import theme from "../../styles/theme";
+import { AuthInput } from "./AuthInput";
 
 export default function SearchRow({
   value,
@@ -10,6 +10,7 @@ export default function SearchRow({
   placeholder,
   notificationLabel,
   onNotificationPress,
+  unreadCount = 0,
   containerStyle,
 }) {
   return (
@@ -31,6 +32,7 @@ export default function SearchRow({
         onPress={onNotificationPress}
       >
         <Bell size={18} color={theme.fontColor.primary} />
+        {unreadCount > 0 && <View style={styles.unreadDot} />}
       </Pressable>
     </View>
   );
@@ -64,6 +66,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   notificationButton: {
+    position: "relative",
     width: 44,
     height: 44,
     alignItems: "center",
@@ -77,5 +80,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 6,
     elevation: 2,
+  },
+  unreadDot: {
+    position: "absolute",
+    top: 9,
+    right: 9,
+    width: 9,
+    height: 9,
+    borderRadius: 4.5,
+    backgroundColor: "#B3261E",
+    borderWidth: 1.5,
+    borderColor: theme.colors.cardBackground,
   },
 });

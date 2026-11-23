@@ -1,10 +1,11 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { File, Paths } from "expo-file-system";
+import * as ImagePicker from "expo-image-picker";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Alert, Platform, StyleSheet } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as ImagePicker from "expo-image-picker";
-import { File, Paths } from "expo-file-system";
-import { useFocusEffect, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useNotifications } from "../contexts/NotificationsContext";
 
 import ProfileContent from "../components/profile/ProfileContent";
 import ProfileMenu from "../components/profile/ProfileMenu";
@@ -13,13 +14,17 @@ import {
   ProfilePhotoModal,
 } from "../components/profile/ProfileModals";
 import { useAuth } from "../contexts/AuthContext";
-import { getStarterProfile, loadSavedProfile, saveProfileData } from "../data/profileStorage";
 import {
   FORMS,
   makeId,
   PHOTO_STORAGE_KEY,
   sections,
 } from "../data/ProfileScreen.data";
+import {
+  getStarterProfile,
+  loadSavedProfile,
+  saveProfileData,
+} from "../data/profileStorage";
 import theme from "../styles/theme";
 
 const styles = StyleSheet.create({
@@ -223,8 +228,10 @@ export default function ProfileScreen({
   footerContent,
 }) {
   const { user, logout } = useAuth();
+  const { getUnreadCount } = useNotifications();
   const router = useRouter();
-  const ownerId = readOnly ? profileUserId : profileUserId ?? user?.id;
+  const unreadCount = user?.id ? getUnreadCount(user.id) : 0;
+  const ownerId = readOnly ? profileUserId : (profileUserId ?? user?.id);
   const canEdit = !readOnly && user?.role === "employee" && ownerId === user.id;
   const starter = useMemo(
     () => profileFallback ?? getStarterProfile(user),
@@ -249,42 +256,49 @@ export default function ProfileScreen({
   const [profileLoadedFor, setProfileLoadedFor] = useState(null);
 
   // Load the selected employee's saved profile, or the application snapshot.
-  useFocusEffect(useCallback(() => {
-    setProfileLoadedFor(null);
-    setProfile(starter.profile);
-    setEducation(starter.education);
-    setExperience(starter.experience);
-    setCertificates(starter.certificates);
-    setAbout(starter.about);
-    setAvatarUri(null);
-    setCoverUri(null);
+  useFocusEffect(
+    useCallback(() => {
+      setProfileLoadedFor(null);
+      setProfile(starter.profile);
+      setEducation(starter.education);
+      setExperience(starter.experience);
+      setCertificates(starter.certificates);
+      setAbout(starter.about);
+      setAvatarUri(null);
+      setCoverUri(null);
 
-    if (!ownerId) return;
-    let cancelled = false;
+      if (!ownerId) return;
+      let cancelled = false;
 
-    loadSavedProfile(ownerId).then((saved) => {
-      if (cancelled) return;
-      setProfile({
-        ...starter.profile,
-        ...(saved?.profile ?? {}),
-        email: saved?.profile?.email ?? starter.profile.email ?? saved?.email ?? user?.email ?? "",
-        phone:
-          saved?.profile?.phone ??
-          saved?.contactNumber ??
-          starter.profile.phone ??
-          "",
+      loadSavedProfile(ownerId).then((saved) => {
+        if (cancelled) return;
+        setProfile({
+          ...starter.profile,
+          ...(saved?.profile ?? {}),
+          email:
+            saved?.profile?.email ??
+            starter.profile.email ??
+            saved?.email ??
+            user?.email ??
+            "",
+          phone:
+            saved?.profile?.phone ??
+            saved?.contactNumber ??
+            starter.profile.phone ??
+            "",
+        });
+        setEducation(saved?.education ?? starter.education);
+        setExperience(saved?.experience ?? starter.experience);
+        setCertificates(saved?.certificates ?? starter.certificates);
+        setAbout({ ...starter.about, ...(saved?.about ?? {}) });
+        setProfileLoadedFor(ownerId);
       });
-      setEducation(saved?.education ?? starter.education);
-      setExperience(saved?.experience ?? starter.experience);
-      setCertificates(saved?.certificates ?? starter.certificates);
-      setAbout({ ...starter.about, ...(saved?.about ?? {}) });
-      setProfileLoadedFor(ownerId);
-    });
 
-    return () => {
-      cancelled = true;
-    };
-  }, [ownerId, starter, user?.email]));
+      return () => {
+        cancelled = true;
+      };
+    }, [ownerId, starter, user?.email]),
+  );
 
   // Do not save an employer's read-only view or data before its owner loads.
   useEffect(() => {
@@ -297,45 +311,62 @@ export default function ProfileScreen({
       certificates,
       about,
     });
-  }, [canEdit, profileLoadedFor, ownerId, profile, education, experience, certificates, about]);
+  }, [
+    canEdit,
+    profileLoadedFor,
+    ownerId,
+    profile,
+    education,
+    experience,
+    certificates,
+    about,
+  ]);
 
   // Load this account's saved photos.
-  useFocusEffect(useCallback(() => {
-    let isMounted = true;
+  useFocusEffect(
+    useCallback(() => {
+      let isMounted = true;
 
-    const loadPhotos = async () => {
-      try {
-        const savedPhotos = await AsyncStorage.getItem(photoStorageKey);
-        if (!savedPhotos) {
+      const loadPhotos = async () => {
+        try {
+          const savedPhotos = await AsyncStorage.getItem(photoStorageKey);
+          if (!savedPhotos) {
+            if (isMounted) {
+              setAvatarUri(null);
+              setCoverUri(null);
+            }
+            return;
+          }
+
+          const photos = JSON.parse(savedPhotos);
+          if (isMounted) {
+            setAvatarUri(
+              typeof photos.avatarUri === "string" ? photos.avatarUri : null,
+            );
+            setCoverUri(
+              typeof photos.coverUri === "string" ? photos.coverUri : null,
+            );
+          }
+        } catch (loadError) {
           if (isMounted) {
             setAvatarUri(null);
             setCoverUri(null);
+            Alert.alert(
+              "Could not load photos",
+              loadError instanceof Error
+                ? loadError.message
+                : "Please try again.",
+            );
           }
-          return;
         }
+      };
 
-        const photos = JSON.parse(savedPhotos);
-        if (isMounted) {
-          setAvatarUri(typeof photos.avatarUri === "string" ? photos.avatarUri : null);
-          setCoverUri(typeof photos.coverUri === "string" ? photos.coverUri : null);
-        }
-      } catch (loadError) {
-        if (isMounted) {
-          setAvatarUri(null);
-          setCoverUri(null);
-          Alert.alert(
-            "Could not load photos",
-            loadError instanceof Error ? loadError.message : "Please try again."
-          );
-        }
-      }
-    };
-
-    loadPhotos();
-    return () => {
-      isMounted = false;
-    };
-  }, [photoStorageKey]));
+      loadPhotos();
+      return () => {
+        isMounted = false;
+      };
+    }, [photoStorageKey]),
+  );
 
   const openEditor = (type, item = null) => {
     let values = {};
@@ -351,13 +382,13 @@ export default function ProfileScreen({
     } else if (type === "experience") {
       values = item
         ? {
-          title: item.title,
-          subtitle: item.subtitle,
-          date: item.date,
-          location: item.details?.[0] ?? "",
-          type: item.details?.[1] ?? "",
-          description: item.description ?? "",
-        }
+            title: item.title,
+            subtitle: item.subtitle,
+            date: item.date,
+            location: item.details?.[0] ?? "",
+            type: item.details?.[1] ?? "",
+            description: item.description ?? "",
+          }
         : {};
     } else if (type === "education") {
       values = item ? { ...item } : { group: "Tertiary" };
@@ -378,7 +409,9 @@ export default function ProfileScreen({
 
   const saveEditor = () => {
     const config = FORMS[editor.type];
-    const missing = config.fields.find((field) => field.required && !form[field.key]?.trim());
+    const missing = config.fields.find(
+      (field) => field.required && !form[field.key]?.trim(),
+    );
     if (missing) {
       setError(`${missing.label} is required.`);
       return;
@@ -396,7 +429,10 @@ export default function ProfileScreen({
     } else if (editor.type === "about") {
       setAbout({
         text: clean("text"),
-        skills: clean("skills").split(",").map((skill) => skill.trim()).filter(Boolean),
+        skills: clean("skills")
+          .split(",")
+          .map((skill) => skill.trim())
+          .filter(Boolean),
         availability: clean("availability"),
       });
     } else {
@@ -434,11 +470,16 @@ export default function ProfileScreen({
       }
 
       if (editor.id) {
-        setList((previous) => previous.map((entry) => (
-          entry.id === editor.id ? { ...entry, ...record } : entry
-        )));
+        setList((previous) =>
+          previous.map((entry) =>
+            entry.id === editor.id ? { ...entry, ...record } : entry,
+          ),
+        );
       } else {
-        setList((previous) => [...previous, { id: makeId(editor.type), ...record }]);
+        setList((previous) => [
+          ...previous,
+          { id: makeId(editor.type), ...record },
+        ]);
       }
     }
 
@@ -456,20 +497,27 @@ export default function ProfileScreen({
       {
         text: "Delete",
         style: "destructive",
-        onPress: () => setters[type]((previous) => previous.filter((entry) => entry.id !== item.id)),
+        onPress: () =>
+          setters[type]((previous) =>
+            previous.filter((entry) => entry.id !== item.id),
+          ),
       },
     ]);
   };
 
   const confirmClearAbout = () => {
-    Alert.alert("Clear about section", "This removes your about text, skills and availability.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Clear",
-        style: "destructive",
-        onPress: () => setAbout({ text: "", skills: [], availability: "" }),
-      },
-    ]);
+    Alert.alert(
+      "Clear about section",
+      "This removes your about text, skills and availability.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Clear",
+          style: "destructive",
+          onPress: () => setAbout({ text: "", skills: [], availability: "" }),
+        },
+      ],
+    );
   };
 
   const pickPhoto = async (target, source) => {
@@ -495,7 +543,10 @@ export default function ProfileScreen({
       if (source === "camera") {
         const permission = await ImagePicker.requestCameraPermissionsAsync();
         if (!permission.granted) {
-          Alert.alert("Camera access needed", "Allow camera access in your settings to take a photo.");
+          Alert.alert(
+            "Camera access needed",
+            "Allow camera access in your settings to take a photo.",
+          );
           return;
         }
         result = await ImagePicker.launchCameraAsync(options);
@@ -507,7 +558,7 @@ export default function ProfileScreen({
           if (!permission.granted) {
             Alert.alert(
               "Photo library access needed",
-              "Allow photo library access in your settings to choose a photo."
+              "Allow photo library access in your settings to choose a photo.",
             );
             return;
           }
@@ -519,7 +570,9 @@ export default function ProfileScreen({
       if (result.canceled) return;
       const asset = result.assets?.[0];
       if (!asset?.uri) {
-        throw new Error("The selected photo is unavailable. Please try another photo.");
+        throw new Error(
+          "The selected photo is unavailable. Please try another photo.",
+        );
       }
 
       const photoKey = target === "avatar" ? "avatarUri" : "coverUri";
@@ -529,17 +582,21 @@ export default function ProfileScreen({
 
       if (Platform.OS === "web") {
         if (!asset.base64) {
-          throw new Error("The selected photo could not be saved. Please try another photo.");
+          throw new Error(
+            "The selected photo could not be saved. Please try another photo.",
+          );
         }
         uri = `data:${asset.mimeType || "image/jpeg"};base64,${asset.base64}`;
       } else {
         const sourceFile = new File(asset.uri);
         if (!sourceFile.exists) {
-          throw new Error("The selected photo is no longer available. Please try again.");
+          throw new Error(
+            "The selected photo is no longer available. Please try again.",
+          );
         }
         copiedFile = new File(
           Paths.document,
-          `hireflow-${target}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}${sourceFile.extension || ".jpg"}`
+          `hireflow-${target}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}${sourceFile.extension || ".jpg"}`,
         );
         await sourceFile.copy(copiedFile);
         uri = copiedFile.uri;
@@ -552,7 +609,10 @@ export default function ProfileScreen({
         try {
           if (copiedFile?.exists) copiedFile.delete();
         } catch (cleanupError) {
-          console.error("Could not clean up an unsaved profile photo.", cleanupError);
+          console.error(
+            "Could not clean up an unsaved profile photo.",
+            cleanupError,
+          );
         }
         throw saveError;
       }
@@ -565,13 +625,18 @@ export default function ProfileScreen({
           const previousFile = new File(previousUri);
           if (previousFile.exists) previousFile.delete();
         } catch (cleanupError) {
-          console.error("Could not remove the previous profile photo.", cleanupError);
+          console.error(
+            "Could not remove the previous profile photo.",
+            cleanupError,
+          );
         }
       }
     } catch (pickError) {
       Alert.alert(
         "Could not load photo",
-        pickError instanceof Error ? pickError.message : "Something went wrong. Please try again."
+        pickError instanceof Error
+          ? pickError.message
+          : "Something went wrong. Please try again.",
       );
     }
   };
@@ -586,7 +651,9 @@ export default function ProfileScreen({
     } catch (removeError) {
       Alert.alert(
         "Could not remove photo",
-        removeError instanceof Error ? removeError.message : "Please try again."
+        removeError instanceof Error
+          ? removeError.message
+          : "Please try again.",
       );
       return;
     }
@@ -621,6 +688,7 @@ export default function ProfileScreen({
         onToggleEditing={() => setIsEditing((value) => !value)}
         onEditProfile={() => router.push("/profile-edit")}
         sections={sections}
+        unreadCount={unreadCount}
         activeSection={activeSection}
         onSelectSection={setActiveSection}
         filteredEducation={education}
@@ -661,6 +729,7 @@ export default function ProfileScreen({
           />
           <ProfileMenu
             visible={isMenuVisible}
+            unreadCount={unreadCount}
             onClose={() => setIsMenuVisible(false)}
             onNotifications={() => router.push("/notifications")}
             onLogout={async () => {

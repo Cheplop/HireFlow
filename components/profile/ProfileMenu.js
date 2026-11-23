@@ -1,10 +1,4 @@
-import {
-  Modal,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Ionicons } from "@expo/vector-icons";
 import theme from "../../styles/theme";
@@ -14,6 +8,7 @@ export default function ProfileMenu({
   onClose,
   onNotifications,
   onLogout,
+  unreadCount = 0,
 }) {
   return (
     <Modal
@@ -31,15 +26,16 @@ export default function ProfileMenu({
               onNotifications();
             }}
           >
-            <Ionicons
-              name="notifications-outline"
-              size={18}
-              color={theme.fontColor.primary}
-            />
+            <View style={styles.iconWrap}>
+              <Ionicons
+                name="notifications-outline"
+                size={18}
+                color={theme.fontColor.primary}
+              />
+              {unreadCount > 0 && <View style={styles.unreadDot} />}
+            </View>
 
-            <Text style={styles.text}>
-              Notifications
-            </Text>
+            <Text style={styles.text}>Notifications</Text>
           </Pressable>
 
           <View style={styles.divider} />
@@ -57,9 +53,7 @@ export default function ProfileMenu({
               color={theme.actions.deletePrimary}
             />
 
-            <Text style={[styles.text, styles.logoutText]}>
-              Log out
-            </Text>
+            <Text style={[styles.text, styles.logoutText]}>Log out</Text>
           </Pressable>
         </View>
       </Pressable>
@@ -92,6 +86,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
     padding: 12,
+  },
+
+  iconWrap: {
+    position: "relative",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  unreadDot: {
+    position: "absolute",
+    top: -1,
+    right: -1,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#B3261E",
   },
 
   text: {

@@ -1,8 +1,10 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { Bell, ChevronLeft, Clock } from "lucide-react-native";
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   FlatList,
+  Image,
   Pressable,
   StyleSheet,
   Text,
@@ -10,9 +12,13 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { useApplications } from "../contexts/ApplicationsContext";
 import { useAuth } from "../contexts/AuthContext";
 import { useNotifications } from "../contexts/NotificationsContext";
+import { PHOTO_STORAGE_KEY } from "../data/ProfileScreen.data";
 import theme from "../styles/theme";
+
+const DEFAULT_AVATAR = require("../assets/images/Hireflow.png");
 
 function formatTimestamp(isoString) {
   if (!isoString) return "";
@@ -34,14 +40,92 @@ function formatTimestamp(isoString) {
 
 export default function NotificationsScreen() {
   const { user } = useAuth();
-  const { getNotificationsForUser, markAllAsRead } = useNotifications();
-  const userNotifications = user ? getNotificationsForUser(user.id) : [];
+  const { getApplicationById } = useApplications();
+  const {
+    getNotificationsForUser,
+    markAsRead,
+    markAllAsRead,
+    seedDefaultNotifications,
+  } = useNotifications();
 
   useEffect(() => {
+    if (user) {
+      seedDefaultNotifications(user);
+    }
+  }, [user, seedDefaultNotifications]);
+
+  const userNotifications = useMemo(
+    () => (user ? getNotificationsForUser(user.id) : []),
+    [user, getNotificationsForUser],
+  );
+  const [senderPhotos, setSenderPhotos] = useState({});
+
+  useEffect(() => {
+    let active = true;
+    const senderIds = [
+      ...new Set(
+        userNotifications.map((item) => item.senderId).filter(Boolean),
+      ),
+    ];
+
+    if (!senderIds.length) {
+      return () => {
+        active = false;
+      };
+    }
+
+    AsyncStorage.multiGet(senderIds.map((id) => `${PHOTO_STORAGE_KEY}:${id}`))
+      .then((entries) => {
+        if (!active) return;
+        const photos = {};
+        entries.forEach(([key, value]) => {
+          if (!value) return;
+          try {
+            const avatarUri = JSON.parse(value)?.avatarUri;
+            const senderId = key.slice(`${PHOTO_STORAGE_KEY}:`.length);
+            if (typeof avatarUri === "string" && avatarUri.trim()) {
+              photos[senderId] = { uri: avatarUri };
+            }
+          } catch {
+            // Ignore malformed photo entries
+          }
+        });
+        setSenderPhotos(photos);
+      })
+      .catch(() => {});
+
+    return () => {
+      active = false;
+    };
+  }, [userNotifications]);
+
+  const handleBack = () => {
     if (user?.id) {
       markAllAsRead(user.id);
     }
-  }, [user?.id, markAllAsRead]);
+    router.back();
+  };
+
+  const handleNotificationPress = (item) => {
+    if (!item.isRead) {
+      markAsRead(item.id);
+    }
+
+    if (user?.role === "employer" || item.type === "application") {
+      const targetApplication = item.relatedId
+        ? getApplicationById(item.relatedId)
+        : null;
+
+      if (targetApplication) {
+        router.push(`/applicants/${targetApplication.id}`);
+      } else {
+        router.push("/applicants");
+      }
+      return;
+    }
+
+    router.push("/(tabs)/applications");
+  };
 
   return (
     <SafeAreaView style={styles.safeAreaView} edges={["top"]}>
@@ -49,7 +133,7 @@ export default function NotificationsScreen() {
         <Pressable
           accessibilityLabel="Go back"
           accessibilityRole="button"
-          onPress={() => router.back()}
+          onPress={handleBack}
           style={styles.circleButton}
         >
           <ChevronLeft size={22} color={theme.fontColor.primary} />
@@ -63,28 +147,48 @@ export default function NotificationsScreen() {
         style={styles.list}
         contentContainerStyle={styles.cards}
         showsVerticalScrollIndicator={false}
-        renderItem={({ item }) => (
-          <View style={styles.card}>
-            <View style={styles.wrapper}>
-              <View style={styles.imageContainer}>
-                <Bell size={26} color={theme.colors.primary} />
-              </View>
+        renderItem={({ item }) => {
+          const avatarSource =
+            (item.senderId && senderPhotos[item.senderId]) || DEFAULT_AVATAR;
 
-              <View style={styles.cardContent}>
-                <Text style={styles.cardTitle}>{item.title}</Text>
-
-                <View style={styles.metaRow}>
-                  <Clock size={14} color={theme.fontColor.secondary} />
-                  <Text style={styles.metaText}>
-                    {formatTimestamp(item.createdAt)}
-                  </Text>
+          return (
+            <Pressable
+              style={({ pressed }) => [
+                styles.card,
+                pressed && styles.cardPressed,
+              ]}
+              onPress={() => handleNotificationPress(item)}
+            >
+              <View style={styles.wrapper}>
+                <View style={styles.imageContainer}>
+                  <Image
+                    source={avatarSource}
+                    style={styles.avatar}
+                    resizeMode="cover"
+                  />
                 </View>
 
-                <Text style={styles.cardDescription}>{item.message}</Text>
+                <View style={styles.cardContent}>
+                  <View style={styles.titleRow}>
+                    <Text style={styles.cardTitle} numberOfLines={1}>
+                      {item.title}
+                    </Text>
+                    {!item.isRead && <View style={styles.unreadDot} />}
+                  </View>
+
+                  <View style={styles.metaRow}>
+                    <Clock size={14} color={theme.fontColor.secondary} />
+                    <Text style={styles.metaText}>
+                      {formatTimestamp(item.createdAt)}
+                    </Text>
+                  </View>
+
+                  <Text style={styles.cardDescription}>{item.message}</Text>
+                </View>
               </View>
-            </View>
-          </View>
-        )}
+            </Pressable>
+          );
+        }}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <View style={styles.emptyIconBox}>
@@ -146,6 +250,9 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.large,
     boxShadow: theme.boxShadow.default,
   },
+  cardPressed: {
+    opacity: 0.85,
+  },
   wrapper: {
     flexDirection: "row",
     gap: theme.spacing.medium,
@@ -161,16 +268,35 @@ const styles = StyleSheet.create({
     boxShadow: theme.boxShadow.default,
     justifyContent: "center",
     alignItems: "center",
+    overflow: "hidden",
+  },
+  avatar: {
+    width: "100%",
+    height: "100%",
   },
   cardContent: {
     flex: 1,
     alignSelf: "flex-start",
   },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+    marginBottom: 4,
+  },
   cardTitle: {
+    flex: 1,
     fontSize: theme.fontSize.medium,
     fontWeight: "bold",
     color: theme.fontColor.primary,
-    marginBottom: 4,
+  },
+  unreadDot: {
+    width: 9,
+    height: 9,
+    borderRadius: 4.5,
+    backgroundColor: "#B3261E",
+    flexShrink: 0,
   },
   metaRow: {
     flexDirection: "row",
