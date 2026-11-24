@@ -1,34 +1,38 @@
-import { useMemo, useState } from 'react';
-import { FlatList, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { router } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from "expo-router";
+import { useMemo, useState } from "react";
+import { FlatList, ScrollView, StyleSheet, Text } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import DashboardSummary from '@/components/DashboardSummary';
-import { ApplyCard } from '@/components/employee/ApplyCard';
-import { PrimaryButton } from '@/components/common/PrimaryButton';
-import SearchRow from '@/components/common/SearchRow';
-import { useAuth } from '../contexts/AuthContext';
-import { useApplications } from '../contexts/ApplicationsContext';
-import { useJobs } from '../contexts/JobsContext';
-import theme from '../styles/theme';
+import { PrimaryButton } from "@/components/common/PrimaryButton";
+import SearchRow from "@/components/common/SearchRow";
+import DashboardSummary from "@/components/DashboardSummary";
+import { ApplyCard } from "@/components/employee/ApplyCard";
+import { useApplications } from "../contexts/ApplicationsContext";
+import { useAuth } from "../contexts/AuthContext";
+import { useJobs } from "../contexts/JobsContext";
+import theme from "../styles/theme";
 
-const employmentTypes = ['All', 'Full-time', 'Part-time', 'Contractual'];
+const employmentTypes = ["All", "Full-time", "Part-time", "Contractual"];
 
 function normalizeType(type) {
-  return type.toLowerCase().replace(/[\s-]/g, '');
+  return type.toLowerCase().replace(/[\s-]/g, "");
 }
 
 export default function HomeScreen() {
   const { user } = useAuth();
   const { jobs, getJobsForEmployer } = useJobs();
   const { applications } = useApplications();
-  const isEmployer = user?.role === 'employer';
+  const isEmployer = user?.role === "employer";
+
   const filledJobIds = useMemo(
-    () => new Set(
-      applications
-        .filter((application) => ['Accepted', 'Completed'].includes(application.status))
-        .map((application) => String(application.jobId)),
-    ),
+    () =>
+      new Set(
+        applications
+          .filter((application) =>
+            ["Accepted", "Completed"].includes(application.status),
+          )
+          .map((application) => String(application.jobId)),
+      ),
     [applications],
   );
   const visibleJobs = useMemo(() => {
@@ -37,16 +41,16 @@ export default function HomeScreen() {
       : jobs.filter((job) => job.isPublished);
 
     return availableJobs.filter((job) => !filledJobIds.has(String(job.id)));
-  }, [filledJobIds, getJobsForEmployer, isEmployer, jobs, user?.id]);
-  const [selectedType, setSelectedType] = useState('All');
-  const [search, setSearch] = useState('');
+  }, [filledJobIds, getJobsForEmployer, isEmployer, jobs, user]);
+  const [selectedType, setSelectedType] = useState("All");
+  const [search, setSearch] = useState("");
 
   const filteredJobs = useMemo(() => {
     const query = search.trim().toLowerCase();
 
     return visibleJobs.filter((job) => {
       const matchesType =
-        selectedType === 'All' ||
+        selectedType === "All" ||
         normalizeType(job.jobMode) === normalizeType(selectedType);
       const searchableText = [
         job.jobTitle,
@@ -54,7 +58,7 @@ export default function HomeScreen() {
         job.jobLocation,
         job.jobDescription,
       ]
-        .join(' ')
+        .join(" ")
         .toLowerCase();
 
       return matchesType && (!query || searchableText.includes(query));
@@ -62,13 +66,13 @@ export default function HomeScreen() {
   }, [search, selectedType, visibleJobs]);
 
   return (
-    <SafeAreaView style={styles.safeAreaView} edges={['top']}>
+    <SafeAreaView style={styles.safeAreaView} edges={["top"]}>
       <SearchRow
         placeholder="Search jobs..."
         value={search}
         onChangeText={setSearch}
         notificationLabel="View notifications"
-        onNotificationPress={() => router.push('/notifications')}
+        onNotificationPress={() => router.push("/notifications")}
       />
 
       {/* Job Type Filters */}
@@ -82,7 +86,7 @@ export default function HomeScreen() {
           <PrimaryButton
             key={type}
             title={type}
-            variant={selectedType === type ? 'active' : 'inactive'}
+            variant={selectedType === type ? "active" : "inactive"}
             onPress={() => setSelectedType(type)}
             style={styles.filterButton}
           />
@@ -104,7 +108,7 @@ export default function HomeScreen() {
             cardLocation={item.jobLocation}
             cardMode={`${item.jobMode} · ${item.jobType}`}
             cardDescription={item.jobDescription}
-            actionTitle={isEmployer ? 'View' : 'Apply'}
+            actionTitle={isEmployer ? "View" : "Apply"}
             onApply={() => router.push(`/jobDetails/${item.id}`)}
           />
         )}
@@ -137,7 +141,7 @@ const styles = StyleSheet.create({
   },
 
   filterButton: {
-    width: 'auto',
+    width: "auto",
     minWidth: 84,
     height: 34,
     paddingHorizontal: 14,
@@ -160,7 +164,7 @@ const styles = StyleSheet.create({
 
   emptyState: {
     color: theme.fontColor.secondary,
-    textAlign: 'center',
+    textAlign: "center",
     padding: theme.spacing.large,
     marginTop: theme.spacing.medium,
   },

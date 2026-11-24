@@ -1,13 +1,7 @@
-import {
-  Image,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
-import { Ionicons } from '@expo/vector-icons';
-import theme from '../../styles/theme';
+import { Ionicons } from "@expo/vector-icons";
+import theme from "../../styles/theme";
 
 export default function ProfileHeader({
   profile,
@@ -17,6 +11,7 @@ export default function ProfileHeader({
   isEditing,
   onPhotoTarget,
   onMenuPress,
+  unreadCount = 0,
 }) {
   return (
     <View>
@@ -38,11 +33,8 @@ export default function ProfileHeader({
             accessibilityRole="button"
             accessibilityLabel="Open profile menu"
           >
-            <Ionicons
-              name="menu"
-              size={22}
-              color={theme.fontColor.dark}
-            />
+            <Ionicons name="menu" size={22} color={theme.fontColor.dark} />
+            {unreadCount > 0 && <View style={styles.unreadDot} />}
           </Pressable>
         ) : null}
 
@@ -51,17 +43,11 @@ export default function ProfileHeader({
             accessibilityRole="button"
             accessibilityLabel="Edit cover photo"
             style={styles.editBadge}
-            onPress={() => onPhotoTarget('cover')}
+            onPress={() => onPhotoTarget("cover")}
           >
-            <Ionicons
-              name="camera"
-              size={12}
-              color={theme.fontColor.dark}
-            />
+            <Ionicons name="camera" size={12} color={theme.fontColor.dark} />
 
-            <Text style={styles.editBadgeText}>
-              Edit cover
-            </Text>
+            <Text style={styles.editBadgeText}>Edit cover</Text>
           </Pressable>
         )}
       </View>
@@ -69,7 +55,7 @@ export default function ProfileHeader({
       <View style={styles.identityRow}>
         <Pressable
           style={styles.avatar}
-          onPress={() => isEditing && onPhotoTarget('avatar')}
+          onPress={() => isEditing && onPhotoTarget("avatar")}
           accessibilityRole="button"
           accessibilityLabel="Edit profile photo"
           accessibilityState={{ disabled: !isEditing }}
@@ -89,13 +75,9 @@ export default function ProfileHeader({
         </Pressable>
 
         <View style={styles.identityText}>
-          <Text style={styles.name}>
-            {profile.name}
-          </Text>
+          <Text style={styles.name}>{profile.name}</Text>
 
-          <Text style={styles.location}>
-            {profile.location}
-          </Text>
+          <Text style={styles.location}>{profile.location}</Text>
         </View>
       </View>
     </View>
@@ -108,36 +90,48 @@ const styles = StyleSheet.create({
     marginTop: 2,
     borderRadius: 6,
     backgroundColor: theme.colors.coverBackground,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
 
   coverImage: {
     ...StyleSheet.absoluteFillObject,
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
 
-menuButton: {
-  position: 'absolute',
-  top: 10,
-  right: 10,
-  width: 38,
-  height: 38,
-  borderRadius: 19,
-  backgroundColor: theme.colors.overlayStrong,
-  alignItems: 'center',
-  justifyContent: 'center',
-  zIndex: 10,
-},
+  menuButton: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: theme.colors.overlayStrong,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 10,
+  },
+
+  unreadDot: {
+    position: "absolute",
+    top: 7,
+    right: 7,
+    width: 9,
+    height: 9,
+    borderRadius: 4.5,
+    backgroundColor: "#B3261E",
+    borderWidth: 1.5,
+    borderColor: theme.colors.cardBackground,
+  },
 
   editBadge: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 8,
     right: 8,
     zIndex: 12,
     elevation: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 5,
     paddingHorizontal: 10,
     paddingVertical: 5,
@@ -152,8 +146,8 @@ menuButton: {
   },
 
   identityRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
+    flexDirection: "row",
+    alignItems: "flex-end",
     gap: 8,
     marginTop: -34,
     marginLeft: 0,
@@ -167,20 +161,21 @@ menuButton: {
     borderWidth: 3,
     borderColor: theme.colors.cardBackground,
     backgroundColor: theme.colors.coverBackground,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
   },
 
   avatarImage: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
 
   identityText: {
     paddingBottom: 2,
     transform: [{ translateY: -15 }],
-},
+  },
+
   name: {
     color: theme.fontColor.primary,
     fontSize: theme.fontSize.large,

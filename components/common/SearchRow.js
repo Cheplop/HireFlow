@@ -1,9 +1,9 @@
 import { Search } from "lucide-react-native";
 import { StyleSheet, View } from "react-native";
 
+import theme from "../../styles/theme";
 import { AuthInput } from "./AuthInput";
 import NotificationBell from "./NotificationBell";
-import theme from "../../styles/theme";
 
 export default function SearchRow({
   value,
@@ -25,7 +25,10 @@ export default function SearchRow({
         rightIcon={<Search size={18} color={theme.fontColor.primary} />}
       />
 
-      <NotificationBell label={notificationLabel} onPress={onNotificationPress} />
+      <NotificationBell
+        label={notificationLabel}
+        onPress={onNotificationPress}
+      />
     </View>
   );
 }

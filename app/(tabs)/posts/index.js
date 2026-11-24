@@ -7,6 +7,8 @@ import {
     Modal,
     Pressable,
     StyleSheet,
+    Alert,
+    Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -211,15 +213,36 @@ export default function Posts() {
         setError('');
     }
 
-    function handleDelete(job) {
+    function performDelete(job) {
         try {
             deleteApplicationsForJob(job.id, user.id);
             deleteJob(job.id, user.id);
             if (editingJob?.id === job.id) cancelEditing();
+            setSelectedJobId(null);
             setError('');
         } catch (deleteError) {
             setError(deleteError.message);
         }
+    }
+
+    function handleDelete(job) {
+        const message = `Delete "${job.jobTitle}"? are you sure you want to delete it? This can't be undone.`;
+
+        if (Platform.OS === 'web') {
+            if (typeof window !== 'undefined' && window.confirm(message)) {
+                performDelete(job);
+            }
+            return;
+        }
+
+        Alert.alert('Delete job', message, [
+            { text: 'Cancel', style: 'cancel' },
+            {
+                text: 'Delete',
+                style: 'destructive',
+                onPress: () => performDelete(job),
+            },
+        ]);
     }
 
     function renderJob({ item }) {

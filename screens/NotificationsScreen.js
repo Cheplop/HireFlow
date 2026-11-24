@@ -119,13 +119,17 @@ export default function NotificationsScreen() {
     ]);
   }
 
+  function handleBack() {
+    router.back();
+  }
+
   return (
     <SafeAreaView style={styles.safeAreaView} edges={["top"]}>
       <View style={styles.headerContainer}>
         <Pressable
           accessibilityLabel="Go back"
           accessibilityRole="button"
-          onPress={() => router.back()}
+          onPress={handleBack}
           style={styles.circleButton}
         >
           <ChevronLeft size={22} color={theme.fontColor.primary} />
@@ -303,6 +307,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     justifyContent: "center",
     alignItems: "center",
+    overflow: "hidden",
   },
   unreadIconContainer: { backgroundColor: "#E8EDF5" },
   cardContent: { flex: 1 },

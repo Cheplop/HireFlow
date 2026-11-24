@@ -22,6 +22,7 @@ import NotificationBell from "@/components/common/NotificationBell";
 import ProfileMenu from "../components/profile/ProfileMenu";
 import { useAuth } from "../contexts/AuthContext";
 import { useApplicants } from "../contexts/ApplicantsContext";
+import { useApplications } from "../contexts/ApplicationsContext";
 import { useJobs } from "../contexts/JobsContext";
 import { loadSavedProfile } from "../data/profileStorage";
 import { PHOTO_STORAGE_KEY } from "../data/ProfileScreen.data";
@@ -83,6 +84,18 @@ export default function ApplicantManagementScreen() {
     loadError,
     saveError,
   } = useApplicants();
+  const { deleteApplication } = useApplications();
+
+  const handleDeleteApplicant = (applicationId) => {
+    try {
+      deleteApplication(applicationId, user.id);
+    } catch (deleteError) {
+      Alert.alert(
+        "Could not delete applicant",
+        deleteError instanceof Error ? deleteError.message : "Please try again.",
+      );
+    }
+  };
 
   const applications = useMemo(
     () =>
@@ -296,6 +309,7 @@ export default function ApplicantManagementScreen() {
             jobId={item.jobId}
             status={item.status}
             avatarSource={profilePhotos[item.employeeId] ?? item.avatar}
+            onDelete={() => handleDeleteApplicant(item.id)}
           />
         )}
         ListHeaderComponent={
