@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { work } from "../data/jobs";
+import { useNotifications } from "./NotificationsContext";
 
 const JobsContext = createContext(null);
 const JOBS_STORAGE_KEY = "hireflow.jobs";
@@ -10,6 +11,7 @@ function isValidJob(job) {
 }
 
 export function JobsProvider({ children }) {
+  const { addNotification } = useNotifications();
   const [jobs, setJobs] = useState(work);
   const [hasLoadedJobs, setHasLoadedJobs] = useState(false);
   const nextJobId = useRef(
@@ -69,8 +71,18 @@ export function JobsProvider({ children }) {
     };
     nextJobId.current += 1;
     setJobs((current) => [newJob, ...current]);
+    addNotification({
+      userId: employerId,
+      recipientRole: "employer",
+      type: "job_published",
+      title: "Job posting published",
+      message: `${newJob.jobTitle} at ${newJob.jobCompany} is now visible to job seekers.`,
+      jobId: newJob.id,
+      route: "/(tabs)/posts",
+      dedupeKey: `job-published:${newJob.id}`,
+    });
     return newJob;
-  }, []);
+  }, [addNotification]);
 
   const updateJob = useCallback(
     (jobId, employerId, jobData) => {
@@ -85,9 +97,18 @@ export function JobsProvider({ children }) {
           String(item.id) === String(jobId) ? updatedJob : item,
         ),
       );
+      addNotification({
+        userId: employerId,
+        recipientRole: "employer",
+        type: "job_updated",
+        title: "Job posting updated",
+        message: `${updatedJob.jobTitle} at ${updatedJob.jobCompany} was updated successfully.`,
+        jobId: updatedJob.id,
+        route: "/(tabs)/posts",
+      });
       return updatedJob;
     },
-    [getJobById],
+    [addNotification, getJobById],
   );
 
   const deleteJob = useCallback(
@@ -118,8 +139,19 @@ export function JobsProvider({ children }) {
             : item,
         ),
       );
+      addNotification({
+        userId: employerId,
+        recipientRole: "employer",
+        type: job.isPublished ? "job_inactive" : "job_published",
+        title: job.isPublished ? "Job posting unpublished" : "Job posting published",
+        message: job.isPublished
+          ? `${job.jobTitle} is no longer visible to job seekers.`
+          : `${job.jobTitle} is visible to job seekers again.`,
+        jobId: job.id,
+        route: "/(tabs)/posts",
+      });
     },
-    [getJobById],
+    [addNotification, getJobById],
   );
 
 

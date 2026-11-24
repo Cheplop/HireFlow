@@ -1,7 +1,8 @@
-import { Bell, Search } from "lucide-react-native";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Search } from "lucide-react-native";
+import { StyleSheet, View } from "react-native";
 
 import { AuthInput } from "./AuthInput";
+import NotificationBell from "./NotificationBell";
 import theme from "../../styles/theme";
 
 export default function SearchRow({
@@ -24,14 +25,7 @@ export default function SearchRow({
         rightIcon={<Search size={18} color={theme.fontColor.primary} />}
       />
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={notificationLabel}
-        style={styles.notificationButton}
-        onPress={onNotificationPress}
-      >
-        <Bell size={18} color={theme.fontColor.primary} />
-      </Pressable>
+      <NotificationBell label={notificationLabel} onPress={onNotificationPress} />
     </View>
   );
 }
@@ -57,21 +51,6 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     backgroundColor: theme.colors.cardBackground,
     fontSize: theme.fontSize.xsmall,
-    shadowColor: theme.colors.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  notificationButton: {
-    width: 44,
-    height: 44,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: 22,
-    backgroundColor: theme.colors.cardBackground,
     shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,

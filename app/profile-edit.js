@@ -21,6 +21,7 @@ import { AuthInput } from "../components/common/AuthInput";
 import { PrimaryButton } from "../components/common/PrimaryButton";
 import { useAuth } from "../contexts/AuthContext";
 import { getStarterProfile, loadSavedProfile, saveProfileData } from "../data/profileStorage";
+import { useNotifications } from "../contexts/NotificationsContext";
 import { PHOTO_STORAGE_KEY } from "../data/ProfileScreen.data";
 import theme from "../styles/theme";
 
@@ -30,6 +31,7 @@ const emptyDraft = {
 
 export default function ProfileEditScreen() {
   const { user } = useAuth();
+  const { addNotification } = useNotifications();
   const router = useRouter();
   const [draft, setDraft] = useState(emptyDraft);
   const [avatarUri, setAvatarUri] = useState(null);
@@ -113,6 +115,14 @@ export default function ProfileEditScreen() {
         const photos = JSON.parse(await AsyncStorage.getItem(photoKey) || "{}");
         await AsyncStorage.setItem(photoKey, JSON.stringify({ ...photos, avatarUri: persistentUri }));
       }
+      addNotification({
+        userId: user.id,
+        recipientRole: user.role,
+        type: "profile_updated",
+        title: "Profile updated",
+        message: "Your profile information was saved successfully.",
+        route: "/(tabs)/profile",
+      });
       Alert.alert("Profile updated", "Your changes have been saved.", [{ text: "OK", onPress: () => router.back() }]);
     } catch {
       setError("Could not save your changes. Please try again.");

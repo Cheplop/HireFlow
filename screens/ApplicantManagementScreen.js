@@ -18,6 +18,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import ApplicantCard from "@/components/employer/ApplicantCard";
 import { AuthInput } from "@/components/common/AuthInput";
 import { PrimaryButton } from "@/components/common/PrimaryButton";
+import NotificationBell from "@/components/common/NotificationBell";
 import ProfileMenu from "../components/profile/ProfileMenu";
 import { useAuth } from "../contexts/AuthContext";
 import { useApplicants } from "../contexts/ApplicantsContext";
@@ -250,6 +251,7 @@ export default function ApplicantManagementScreen() {
           inputStyle={styles.searchInputField}
           rightIcon={<Search size={20} color={theme.fontColor.primary} />}
         />
+        <NotificationBell onPress={() => router.push("/notifications")} />
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Open menu"

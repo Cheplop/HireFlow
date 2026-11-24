@@ -128,9 +128,34 @@ export function ApplicationsProvider({ children }) {
 
       setApplications((current) => [...current, application]);
 
+      addNotification({
+        userId: job.employerId,
+        recipientRole: "employer",
+        type: "new_application",
+        title: "New application received",
+        message: `${user.username} applied for ${job.jobTitle} at ${job.jobCompany}.`,
+        jobId: job.id,
+        applicationId: application.id,
+        relatedId: application.id,
+        route: `/applicants/${application.id}?jobId=${job.id}`,
+        dedupeKey: `application-submitted:${application.id}`,
+      });
+      addNotification({
+        userId: user.id,
+        recipientRole: "employee",
+        type: "application_submitted",
+        title: "Application submitted",
+        message: `Your application for ${job.jobTitle} at ${job.jobCompany} was sent successfully.`,
+        jobId: job.id,
+        applicationId: application.id,
+        relatedId: application.id,
+        route: `/jobDetails/${job.id}`,
+        dedupeKey: `application-confirmation:${application.id}`,
+      });
+
       return application;
     },
-    [applications, getJobById, hasLoadedApplications],
+    [addNotification, applications, getJobById, hasLoadedApplications],
   );
 
   // Get one employee's application for a specific job
@@ -179,6 +204,8 @@ export function ApplicationsProvider({ children }) {
 
       if (
         !application ||
+        user?.role !== "employee" ||
+        user.id !== employeeId ||
         application.employeeId !== employeeId ||
         application.status !== "Pending"
       ) {
@@ -202,12 +229,31 @@ export function ApplicationsProvider({ children }) {
       setApplications((current) =>
         current.map((item) =>
           item.id === application.id
-            ? { ...item, coverLetter: trimmedCoverLetter }
+            ? { ...item, coverLetter: trimmedCoverLetter, updatedAt: new Date().toISOString() }
             : item,
         ),
       );
+
+      const job = getJobById(application.jobId);
+      setApplications((current) =>
+        current.filter((item) => item.id !== application.id),
+      );
+
+      if (job) {
+        addNotification({
+          userId: job.employerId,
+          recipientRole: "employer",
+          type: "application_updated",
+          title: "Application updated",
+          message: `${user?.username || "An applicant"} updated their application for ${job.jobTitle}.`,
+          jobId: job.id,
+          applicationId: application.id,
+          relatedId: application.id,
+          route: `/applicants/${application.id}?jobId=${job.id}`,
+        });
+      }
     },
-    [getApplicationById],
+    [addNotification, getApplicationById, getJobById, user],
   );
 
   // Allow employees to withdraw pending applications
@@ -217,6 +263,8 @@ export function ApplicationsProvider({ children }) {
 
       if (
         !application ||
+        user?.role !== "employee" ||
+        user.id !== employeeId ||
         application.employeeId !== employeeId ||
         application.status !== "Pending"
       ) {
@@ -225,11 +273,35 @@ export function ApplicationsProvider({ children }) {
         );
       }
 
-      setApplications((current) =>
-        current.filter((item) => item.id !== application.id),
-      );
+      const job = getJobById(application.jobId);
+      if (job) {
+        addNotification({
+          userId: job.employerId,
+          recipientRole: "employer",
+          type: "application_withdrawn",
+          title: "Application withdrawn",
+          message: `${application.applicant?.name || "An applicant"} withdrew their application for ${job.jobTitle}.`,
+          jobId: job.id,
+          applicationId: application.id,
+          relatedId: application.id,
+          route: "/(tabs)/applicants",
+          dedupeKey: `application-withdrawn:${application.id}`,
+        });
+        addNotification({
+          userId: employeeId,
+          recipientRole: "employee",
+          type: "application_withdrawn",
+          title: "Withdrawal confirmed",
+          message: `Your application for ${job.jobTitle} at ${job.jobCompany} was withdrawn.`,
+          jobId: job.id,
+          applicationId: application.id,
+          relatedId: application.id,
+          route: "/(tabs)/applications",
+          dedupeKey: `application-withdrawal-confirmed:${application.id}`,
+        });
+      }
     },
-    [getApplicationById],
+    [addNotification, getApplicationById, getJobById, user],
   );
 
   // Allow employers to update application status
@@ -295,10 +367,15 @@ export function ApplicationsProvider({ children }) {
 
       addNotification({
         userId: application.employeeId,
+        recipientRole: "employee",
+        type: status === "Accepted" ? "success" : status === "Declined" ? "error" : "info",
         title: `Application ${status.toLowerCase()}`,
         message: `Your application for ${job.jobTitle} at ${job.jobCompany} was ${status.toLowerCase()}.`,
-        type: status === "Accepted" ? "success" : status === "Declined" ? "error" : "info",
+        jobId: job.id,
+        applicationId: application.id,
         relatedId: application.id,
+        route: `/jobDetails/${job.id}`,
+        dedupeKey: `application-status:${application.id}:${status}`,
       });
     },
     [addNotification, applications, getApplicationById, getJobById, hasLoadedApplications, user],
@@ -315,13 +392,29 @@ export function ApplicationsProvider({ children }) {
         );
       }
 
+      const applicationsForJob = getApplicationsForJob(job.id);
+      for (const application of applicationsForJob) {
+        addNotification({
+          userId: application.employeeId,
+          recipientRole: "employee",
+          type: "job_unavailable",
+          title: "Job posting cancelled",
+          message: `${job.jobTitle} at ${job.jobCompany} was removed. Your application is no longer active.`,
+          jobId: job.id,
+          applicationId: application.id,
+          relatedId: application.id,
+          route: "/(tabs)/applications",
+          dedupeKey: `job-removed:${job.id}:${application.id}`,
+        });
+      }
+
       setApplications((current) =>
         current.filter(
           (application) => application.jobId !== job.id,
         ),
       );
     },
-    [getJobById],
+    [addNotification, getApplicationsForJob, getJobById],
   );
 
   return (

@@ -67,10 +67,8 @@ export default function HomeScreen() {
         placeholder="Search jobs..."
         value={search}
         onChangeText={setSearch}
-        notificationLabel={isEmployer ? 'View applicants' : 'View application updates'}
-        onNotificationPress={() =>
-          router.push(isEmployer ? '/(tabs)/applicants' : '/notifications')
-        }
+        notificationLabel="View notifications"
+        onNotificationPress={() => router.push('/notifications')}
       />
 
       {/* Job Type Filters */}
@@ -91,9 +89,10 @@ export default function HomeScreen() {
         ))}
       </ScrollView>
 
+      <DashboardSummary />
+
       <FlatList
         data={filteredJobs}
-        ListHeaderComponent={<DashboardSummary />}
         style={styles.jobList}
         contentContainerStyle={styles.cards}
         showsVerticalScrollIndicator={false}
