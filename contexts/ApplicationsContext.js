@@ -311,6 +311,23 @@ export function ApplicationsProvider({ children }) {
     ],
   );
 
+  // Allow employers to delete a single applicant from their own job
+  const deleteApplication = useCallback(
+    (applicationId, employerId) => {
+      const application = getApplicationById(applicationId);
+      const job = application && getJobById(application.jobId);
+
+      if (!application || !job || job.employerId !== employerId) {
+        throw new Error("You can only delete applicants for your own jobs.");
+      }
+
+      setApplications((current) =>
+        current.filter((item) => item.id !== application.id),
+      );
+    },
+    [getApplicationById, getJobById],
+  );
+
   // Allow employers to delete applications for their own jobs
   const deleteApplicationsForJob = useCallback(
     (jobId, employerId) => {
@@ -327,7 +344,7 @@ export function ApplicationsProvider({ children }) {
     [getJobById],
   );
 
-  return (
+return (
     <ApplicationsContext.Provider
       value={{
         applications,
@@ -342,6 +359,7 @@ export function ApplicationsProvider({ children }) {
         updateEmployeeApplication,
         withdrawApplication,
         setApplicationStatus,
+        deleteApplication,
         deleteApplicationsForJob,
       }}
     >

@@ -1,4 +1,3 @@
-
 import { createContext, useCallback, useContext } from "react";
 import { useApplications } from "./ApplicationsContext";
 import { useJobs } from "./JobsContext";
@@ -10,6 +9,7 @@ export function ApplicantsProvider({ children }) {
     getApplicationsForJob,
     getApplicationById,
     setApplicationStatus,
+    deleteApplication,
     hasLoadedApplications,
     loadError,
     saveError,
@@ -66,6 +66,7 @@ export function ApplicantsProvider({ children }) {
         getApplicantsByJob,
         getStatus,
         updateApplicationStatus,
+        deleteApplication,
         hasLoadedApplications,
         loadError,
         saveError,
