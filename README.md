@@ -1,63 +1,61 @@
-
--rich mhyc
-
 # HireFlow
 
-HireFlow is a mobile employment app built with React Native and Expo. It provides account setup screens and a job-browsing experience with sample listings and job details.
+HireFlow is a mobile employment app built with React Native and Expo. Job seekers can browse openings, submit and manage applications, and employers can publish jobs and review applicants.
 
-## Overview
+## Features
 
-This project is designed for job seekers who want a simple way to:
+- Account registration, sign-in, onboarding, and profile management
+- Job browsing, search, job details, and employer job-post management
+- Job applications, application editing and withdrawal, and employer status updates
+- Role-specific notifications for job seekers and employers
+- Local persistence for app data using AsyncStorage
 
-- create an account or sign in
-- complete a registration flow for personal and employment details
-- browse job listings
-- review job descriptions, responsibilities, work arrangements, and salary information
+## Notifications
 
-## Current app flow
+The notification bell is available in the app’s search/navigation rows. It displays the signed-in user’s unread count. The Notifications screen lists that user’s notifications newest first and provides read/unread indicators, event-specific icons, timestamps, and actions to mark one notification or all notifications as read, delete a notification, or clear the list.
 
-The application currently includes:
+Selecting a notification marks it as read and opens the related application, job, applicant list, job-post list, or profile when that destination is available. If a related record is missing, the app falls back to the relevant list screen.
 
-- a login screen with email and password entry
-- a registration screen for account creation
-- onboarding steps for basic information, birth date, and educational background
-- a home screen showing sample job cards
-- a job details screen for each listing
+Notifications are created from application and job workflows:
+
+- Submitting an application notifies the employer and sends the job seeker a submission confirmation.
+- Editing an application notifies the employer.
+- Withdrawing a pending application removes it from the applicant’s list and notifies both the employer and job seeker.
+- Accepting or declining an application notifies the job seeker.
+- Removing a job posting notifies applicants that their application is no longer active.
+- Publishing, updating, or changing the active state of a job generates an employer notification.
+- Saving profile changes generates a profile-updated notification.
+
+Notifications are stored locally in AsyncStorage and filtered by recipient user ID. Read state and notification management persist on the device. This is an in-app notification system; it does not send remote push notifications, email, or server-side alerts. Notifications do not sync between devices because the project does not currently use a backend notification service.
 
 ## Tech stack
 
-- React Native
-- Expo
-- Expo Router
+- React Native and Expo SDK 58
+- Expo Router for file-based navigation
 - JavaScript
-- React Native components
+- AsyncStorage for local persistence
+- `lucide-react-native` for interface icons
 
 ## Project structure
 
-```bash
+```text
 my-app/
-├── app/
-│   ├── (tabs)/
-│   ├── registration/
-│   ├── jobDetails/
-│   ├── index.js
-│   └── _layout.js
-├── components/
-├── data/
-│   └── jobs.js
-├── screens/
-├── styles/
-├── assets/
-├── scripts/
+├── app/                    # Expo Router routes and layouts
+├── components/             # Shared UI and feature components
+├── contexts/               # Auth, jobs, applications, and notifications state
+├── data/                   # Local app data and profile constants
+├── screens/                # Screen-level UI, including NotificationsScreen
+├── styles/                 # Shared theme and styling
+├── assets/                 # Images, fonts, and other static assets
 ├── app.json
+├── eas.json
 ├── package.json
-├── tsconfig.json
 └── README.md
 ```
 
 ## Getting started
 
-1. Install dependencies:
+1. Install Node.js and npm, then install dependencies:
 
    ```bash
    npm install
@@ -69,13 +67,7 @@ my-app/
    npx expo start
    ```
 
-3. Open the app in a simulator, emulator, or Expo Go.
-
-## Job listings
-
-The app currently uses four sample job listings defined in [`data/jobs.js`](./data/jobs.js). The home screen renders the listings as cards, and selecting a card opens its job details. The data is local and static; it is not loaded from an API or saved to a database.
-
-Each listing has an `id`, company logo, job title, location, company, work mode, work type, description, responsibilities, and salary. Update the `work` array in `data/jobs.js` to change the sample listings. Company logos reference images in `assets/images/`.
+3. Open the app using Expo Go, an Android emulator, an iOS simulator, or the web option in the Expo development server.
 
 ## Available scripts
 
@@ -87,16 +79,10 @@ npm run web
 npm run lint
 ```
 
-## Notes
+## Data and limitations
 
-This repo is still evolving. It uses file-based routing through Expo Router and is meant to serve as a foundation for continued employment-app features.
+App accounts, jobs, applications, and notifications currently use local app storage and application data; there is no production API or shared database. Data stored locally is specific to the device/browser installation. Notification history is not a replacement for operating-system push notifications.
 
-## Future improvements
+## Contributing
 
-Planned enhancements may include:
-
-- persistent user data storage
-- real authentication integration
-- connecting job listings and application tracking to a backend
-- resume upload and profile management
-- notifications and reminders
+Keep notification creation connected to successful app workflows, scope each notification to its intended recipient, and avoid introducing sample notifications as real activity. Follow the existing React Native, Expo Router, context, and theme conventions when adding features.
